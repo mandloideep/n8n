@@ -42,7 +42,7 @@ A modern, visual workflow automation platform built with React and FastAPI. Crea
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/samiksha0shukla/n8n.git
+   git clone https://github.com/mandloideep/n8n.git
    cd n8n
    ```
 
