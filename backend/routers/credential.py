@@ -33,20 +33,27 @@ def get_all_credentials(
 
 
 @router.get("/credential/{cred_id}", response_model=CredentialResponse)
-def get_credential(cred_id: int, db: Session = Depends(get_db)):
-    cred = db.query(Credentials).filter(Credentials.id == cred_id).first()
-    if not cred: 
+def get_credential(
+    cred_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    cred = db.query(Credentials).filter(
+        Credentials.id == cred_id,
+        Credentials.user_id == user_id,
+    ).first()
+    if not cred:
         raise HTTPException(status_code=404, detail="Credentials not found")
     return cred
 
 
 @router.post("/credential", response_model=CredentialResponse)
 def create_credential(
-    cred: CredentialCreate, 
+    cred: CredentialCreate,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user)
 ):
-    new_cred = Credentials(**cred.dict(), user_id=user_id)
+    new_cred = Credentials(**cred.model_dump(), user_id=user_id)
     db.add(new_cred)
     db.commit()
     db.refresh(new_cred)
@@ -54,8 +61,17 @@ def create_credential(
 
 
 @router.delete("/credential/{cred_id}")
-def delete_credential(cred_id: int, db: Session = Depends(get_db)):
-    cred = db.query(Credentials).filter(Credentials.id == cred_id).first()
+def delete_credential(
+    cred_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    cred = db.query(Credentials).filter(
+        Credentials.id == cred_id,
+        Credentials.user_id == user_id,
+    ).first()
+    if not cred:
+        raise HTTPException(status_code=404, detail="Credentials not found")
     db.delete(cred)
     db.commit()
-    return{"message": "Credentials Deleted"}
+    return {"message": "Credentials Deleted"}

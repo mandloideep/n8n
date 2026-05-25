@@ -1,10 +1,12 @@
+import json
+
 from fastapi import HTTPException, Depends, APIRouter, Request
 from sqlalchemy.orm import Session
 from db.database import get_db
 from models.workflow import Workflow
 from schemas.workflow import WorkflowResponse
 from executor.executor import execute_workflow
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 router = APIRouter(tags=["Webhook"])
@@ -17,7 +19,7 @@ async def webhook_handler_by_path(
     db: Session = Depends(get_db)
 ):
     """
-    n8n-style webhook handler that triggers workflows by their unique webhook path.
+    Webhook handler that triggers workflows by their unique webhook path.
     Accepts both GET and POST requests, passing request data to the workflow.
     """
     # Find workflow by webhook path
@@ -82,10 +84,10 @@ async def _execute_webhook(
     if request.method == "POST":
         try:
             body = await request.json()
-        except:
+        except (json.JSONDecodeError, ValueError):
             body = {}
     
-    # Build initial context with webhook data (n8n-style)
+    # Build initial context exposing the inbound webhook request to nodes.
     initial_context = {
         "webhook": {
             "method": request.method,
@@ -97,18 +99,17 @@ async def _execute_webhook(
         "test_mode": test_mode,
     }
     
-    workflow_schema = WorkflowResponse.from_orm(workflow_data)
-    
-    execution_start = datetime.utcnow()
-    
+    workflow_schema = WorkflowResponse.model_validate(workflow_data)
+
+    execution_start = datetime.now(timezone.utc)
+
     try:
         result = await execute_workflow(workflow_schema, db, initial_context)
-        
-        # Update last executed timestamp
-        workflow_data.last_executed_at = datetime.utcnow()
+
+        workflow_data.last_executed_at = datetime.now(timezone.utc)
         db.commit()
-        
-        execution_end = datetime.utcnow()
+
+        execution_end = datetime.now(timezone.utc)
         execution_time_ms = (execution_end - execution_start).total_seconds() * 1000
         
         return {
@@ -121,7 +122,7 @@ async def _execute_webhook(
         }
         
     except Exception as e:
-        execution_end = datetime.utcnow()
+        execution_end = datetime.now(timezone.utc)
         execution_time_ms = (execution_end - execution_start).total_seconds() * 1000
         
         raise HTTPException(

@@ -1,7 +1,7 @@
-# n8n Clone - Changes Documentation
+# Workflow Builder — Changes Documentation
 
 ## Overview
-This document summarizes all changes made to connect the frontend and backend, complete the n8n-like workflow automation app, and enhance the UI/UX.
+This document summarizes all changes made to connect the frontend and backend, complete the visual workflow automation app, and enhance the UI/UX.
 
 ---
 
@@ -23,7 +23,7 @@ This document summarizes all changes made to connect the frontend and backend, c
 ### Routers
 
 #### `routers/webhook.py` - Complete Rewrite
-- Added n8n-style webhook handling with unique paths: `/webh/webhook/{webhook_path}`
+- Added webhook handling with unique paths per workflow: `/webh/webhook/{webhook_path}`
 - Added test mode endpoint: `/webh/webhook/test/{workflow_id}` for frontend testing
 - Passes request body, query params, and headers to workflow context
 - Returns execution time, status, and detailed results

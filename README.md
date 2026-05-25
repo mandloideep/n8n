@@ -1,6 +1,6 @@
-# 🔄 WorkflowBuilder - n8n Clone
+# 🔄 Workflow Builder
 
-A modern, visual workflow automation platform built with React and FastAPI. Create powerful automations by connecting your favorite apps and services without writing code.
+A visual workflow automation tool, inspired by n8n. Built with React and FastAPI — create powerful automations by connecting your favorite apps and services without writing code.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-green.svg)
