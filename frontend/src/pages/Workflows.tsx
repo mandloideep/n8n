@@ -6,19 +6,11 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-} from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  deleteWorkflow,
-  executeWorkflow,
-  getWorkflowsPage,
-} from "@/services/workflow.service";
+import { deleteWorkflow, executeWorkflow, getWorkflowsPage } from "@/services/workflow.service";
 import { toastError } from "@/services/api-caller";
 import { toast } from "sonner";
 
@@ -95,9 +87,7 @@ export default function Workflows() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
             Workflows
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Build and manage your automation workflows
-          </p>
+          <p className="text-muted-foreground mt-1">Build and manage your automation workflows</p>
         </div>
         <Link to="/workflows/new">
           <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
@@ -201,9 +191,7 @@ export default function Workflows() {
                     </span>
                   )}
                   {workflow.created_at && (
-                    <span>
-                      Created: {new Date(workflow.created_at).toLocaleDateString()}
-                    </span>
+                    <span>Created: {new Date(workflow.created_at).toLocaleDateString()}</span>
                   )}
                 </div>
               </CardContent>

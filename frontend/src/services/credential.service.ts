@@ -1,9 +1,5 @@
 import { request } from "./api-caller";
-import {
-  CredentialSchema,
-  DeleteResponseSchema,
-  paginated,
-} from "@/lib/schemas";
+import { CredentialSchema, DeleteResponseSchema, paginated } from "@/lib/schemas";
 import type { Credential, CredentialCreate } from "@/types/workflow";
 
 const PaginatedCredentialSchema = paginated(CredentialSchema);
@@ -23,10 +19,7 @@ export const getCredentials = async (limit = 50, offset = 0): Promise<Credential
   return data.items as Credential[];
 };
 
-export const getCredentialsPage = async (
-  limit = 20,
-  offset = 0,
-): Promise<CredentialsPage> => {
+export const getCredentialsPage = async (limit = 20, offset = 0): Promise<CredentialsPage> => {
   const data = await request(PaginatedCredentialSchema, {
     method: "GET",
     url: "/credential/credential",
@@ -43,9 +36,7 @@ export const getCredential = async (id: number): Promise<Credential> => {
   return data as Credential;
 };
 
-export const createCredential = async (
-  credential: CredentialCreate,
-): Promise<Credential> => {
+export const createCredential = async (credential: CredentialCreate): Promise<Credential> => {
   const data = await request(CredentialSchema, {
     method: "POST",
     url: "/credential/credential",

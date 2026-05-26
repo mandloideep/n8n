@@ -16,11 +16,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-} from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { deleteCredential, getCredentialsPage } from "@/services/credential.service";
@@ -93,9 +89,7 @@ export default function Credentials() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
             Credentials
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your service credentials securely
-          </p>
+          <p className="text-muted-foreground mt-1">Manage your service credentials securely</p>
         </div>
         <Link to="/credentials/new">
           <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
@@ -139,8 +133,7 @@ export default function Credentials() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-lg bg-gradient-to-br ${
-                      platformColors[credential.platform] ||
-                      "from-secondary to-secondary/50"
+                      platformColors[credential.platform] || "from-secondary to-secondary/50"
                     } flex items-center justify-center border`}
                   >
                     {platformIcons[credential.platform] || <Key className="w-5 h-5" />}
@@ -164,9 +157,7 @@ export default function Credentials() {
               <CardContent className="relative">
                 <div className="text-xs text-muted-foreground">
                   {credential.created_at && (
-                    <span>
-                      Added: {new Date(credential.created_at).toLocaleDateString()}
-                    </span>
+                    <span>Added: {new Date(credential.created_at).toLocaleDateString()}</span>
                   )}
                 </div>
               </CardContent>

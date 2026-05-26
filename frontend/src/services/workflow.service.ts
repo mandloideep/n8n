@@ -5,12 +5,7 @@ import {
   WorkflowSchema,
   paginated,
 } from "@/lib/schemas";
-import type {
-  Workflow,
-  WorkflowCreate,
-  WorkflowUpdate,
-  ExecutionResult,
-} from "@/types/workflow";
+import type { Workflow, WorkflowCreate, WorkflowUpdate, ExecutionResult } from "@/types/workflow";
 
 const PaginatedWorkflowSchema = paginated(WorkflowSchema);
 export type WorkflowsPage = {
@@ -55,10 +50,7 @@ export const createWorkflow = async (workflow: WorkflowCreate): Promise<Workflow
   return data as Workflow;
 };
 
-export const updateWorkflow = async (
-  id: number,
-  workflow: WorkflowUpdate,
-): Promise<Workflow> => {
+export const updateWorkflow = async (id: number, workflow: WorkflowUpdate): Promise<Workflow> => {
   const data = await request(WorkflowSchema, {
     method: "PUT",
     url: `/workf/workflow/${id}`,

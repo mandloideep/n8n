@@ -12,7 +12,7 @@ export default function WorkflowEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  
+
   const {
     currentWorkflow,
     workflowTitle,
@@ -27,7 +27,7 @@ export default function WorkflowEditor() {
     executeWorkflow,
     resetWorkflow,
   } = useWorkflowStore();
-  
+
   // Load workflow if editing
   useEffect(() => {
     if (id) {
@@ -38,17 +38,17 @@ export default function WorkflowEditor() {
     } else {
       resetWorkflow();
     }
-    
+
     return () => {
       // Clean up on unmount
     };
   }, [id]);
-  
+
   const handleSave = async () => {
     try {
       const workflow = await (currentWorkflow ? saveWorkflow() : createWorkflow());
       toast.success("Workflow saved successfully!");
-      
+
       // Navigate to edit mode if this was a new workflow
       if (!id && workflow.id) {
         navigate(`/workflows/${workflow.id}/edit`, { replace: true });
@@ -57,13 +57,13 @@ export default function WorkflowEditor() {
       toast.error(error.message || "Failed to save workflow");
     }
   };
-  
+
   const handleExecute = async () => {
     if (!currentWorkflow) {
       toast.error("Please save the workflow first");
       return;
     }
-    
+
     try {
       const result = await executeWorkflow();
       if (result.status === "success") {
@@ -75,7 +75,7 @@ export default function WorkflowEditor() {
       toast.error(error.message || "Execution failed");
     }
   };
-  
+
   const copyWebhookUrl = () => {
     if (currentWorkflow?.webhook_path) {
       // Assumes SPA and API share an origin (true in dev via Vite proxy and in
@@ -88,7 +88,7 @@ export default function WorkflowEditor() {
       toast.success("Webhook URL copied!");
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -105,21 +105,17 @@ export default function WorkflowEditor() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/workflows")}
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate("/workflows")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          
+
           <Input
             value={workflowTitle}
             onChange={(e) => setWorkflowTitle(e.target.value)}
             placeholder="Workflow name..."
             className="w-64 bg-background/50 border-border/50 focus:border-primary"
           />
-          
+
           {currentWorkflow?.webhook_path && (
             <Button
               variant="outline"
@@ -136,13 +132,9 @@ export default function WorkflowEditor() {
             </Button>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
@@ -150,7 +142,7 @@ export default function WorkflowEditor() {
             )}
             Save
           </Button>
-          
+
           <Button
             onClick={handleExecute}
             disabled={isExecuting || !currentWorkflow}
@@ -165,14 +157,14 @@ export default function WorkflowEditor() {
           </Button>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Canvas */}
         <div className="flex-1">
           <WorkflowCanvas />
         </div>
-        
+
         {/* Config Panel */}
         {selectedNodeId && (
           <div className="w-80 border-l border-border bg-card/30">

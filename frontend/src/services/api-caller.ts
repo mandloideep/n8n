@@ -46,18 +46,14 @@ apiCaller.interceptors.response.use(
     // Auth-flow calls drive their own UX — skip the silent-refresh and the
     // session-expired redirect so wrong-password on signin doesn't loop.
     const isAuthCall =
-      url.includes("/auth/signin") ||
-      url.includes("/auth/signup") ||
-      url.includes("/auth/refresh");
+      url.includes("/auth/signin") || url.includes("/auth/signup") || url.includes("/auth/refresh");
 
     if (status === 401 && original && !original._retry && !isAuthCall) {
       original._retry = true;
       if (!refreshPromise) {
-        refreshPromise = apiCaller
-          .post("/auth/refresh", {})
-          .finally(() => {
-            refreshPromise = null;
-          });
+        refreshPromise = apiCaller.post("/auth/refresh", {}).finally(() => {
+          refreshPromise = null;
+        });
       }
       try {
         await refreshPromise;
@@ -83,10 +79,7 @@ apiCaller.interceptors.response.use(
 
 // Typed axios wrapper that validates the response with a Zod schema.
 // Throws RequestError on HTTP non-2xx, ZodError on shape mismatch.
-export async function request<T>(
-  schema: z.ZodType<T>,
-  config: AxiosRequestConfig,
-): Promise<T> {
+export async function request<T>(schema: z.ZodType<T>, config: AxiosRequestConfig): Promise<T> {
   try {
     const res = await apiCaller.request<unknown>(config);
     const parsed = schema.safeParse(res.data);

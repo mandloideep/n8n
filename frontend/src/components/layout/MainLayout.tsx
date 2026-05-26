@@ -11,9 +11,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-black">
         <AppSidebar />
-        <main className="flex-1 overflow-hidden">
-          {children}
-        </main>
+        <main className="flex-1 overflow-hidden">{children}</main>
       </div>
     </SidebarProvider>
   );

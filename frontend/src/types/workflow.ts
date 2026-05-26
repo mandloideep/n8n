@@ -1,6 +1,6 @@
 // TypeScript types matching backend schemas
 
-export type PlatformType = 'telegram' | 'email' | 'slack' | 'trigger';
+export type PlatformType = "telegram" | "email" | "slack" | "trigger";
 
 export interface Node {
   id: string;
@@ -64,7 +64,7 @@ export interface CredentialCreate {
 export interface ExecutionResult {
   workflow_id: number;
   webhook_path?: string;
-  status: 'success' | 'failed';
+  status: "success" | "failed";
   test_mode: boolean;
   execution_time_ms: number;
   result?: {
@@ -72,7 +72,7 @@ export interface ExecutionResult {
     executed_nodes: Array<{
       id: string;
       name: string;
-      status: 'success' | 'skipped' | 'error';
+      status: "success" | "skipped" | "error";
       error?: string;
     }>;
     context: Record<string, any>;

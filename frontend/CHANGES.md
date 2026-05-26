@@ -1,6 +1,7 @@
 # Workflow Builder — Changes Documentation
 
 ## Overview
+
 This document summarizes all changes made to connect the frontend and backend, complete the visual workflow automation app, and enhance the UI/UX.
 
 ---
@@ -8,13 +9,15 @@ This document summarizes all changes made to connect the frontend and backend, c
 ## Backend Changes
 
 ### Models (`models/workflow.py`)
+
 - Added `webhook_path` field (unique path for each workflow webhook)
 - Added `created_at`, `updated_at`, `last_executed_at` timestamps
 - Added `generate_webhook_path()` method
 
 ### Schemas (`schemas/`)
+
 - **credentials.py**: Removed `user_id` from `CredentialCreate` (extracted from JWT token)
-- **workflow.py**: 
+- **workflow.py**:
   - Made `credential_id` optional
   - Made `data` default to empty dict
   - Added `webhook_path` and timestamps to response
@@ -23,6 +26,7 @@ This document summarizes all changes made to connect the frontend and backend, c
 ### Routers
 
 #### `routers/webhook.py` - Complete Rewrite
+
 - Added webhook handling with unique paths per workflow: `/webh/webhook/{webhook_path}`
 - Added test mode endpoint: `/webh/webhook/test/{workflow_id}` for frontend testing
 - Passes request body, query params, and headers to workflow context
@@ -30,12 +34,15 @@ This document summarizes all changes made to connect the frontend and backend, c
 - Updates `last_executed_at` on successful execution
 
 #### `routers/workflow.py`
+
 - Generates unique `webhook_path` on workflow creation
 
 #### `routers/credential.py`
+
 - Extracts `user_id` from JWT token instead of request body
 
 ### Executor (`executor/executor.py`)
+
 - Updated `execute_workflow()` to accept `initial_context` parameter
 - Passes webhook data through execution context
 - Returns structured result with `executed_nodes` list
@@ -48,15 +55,18 @@ This document summarizes all changes made to connect the frontend and backend, c
 ### New Files
 
 #### State Management
+
 - `src/store/workflowStore.ts` - Zustand store for workflow state
 - `src/types/workflow.ts` - TypeScript interfaces for all entities
 
 #### Services
+
 - `src/services/credential.service.ts` - CRUD operations for credentials
 - Updated `src/services/workflow.service.ts` - Full CRUD + execute
 - Updated `src/services/api-caller.ts` - Axios interceptors for JWT auth
 
 #### Components
+
 - `src/components/workflow/NodeConfigPanel.tsx` - Node configuration panel
 - `src/components/workflow/nodes/SlackNode.tsx` - Slack node component
 - `src/components/credentials/CredentialForm.tsx` - Credential creation form
@@ -64,6 +74,7 @@ This document summarizes all changes made to connect the frontend and backend, c
 ### Modified Files
 
 #### Pages
+
 - **WorkflowEditor.tsx** - Complete rewrite with:
   - Workflow title input
   - Save/Execute buttons with loading states
@@ -95,6 +106,7 @@ This document summarizes all changes made to connect the frontend and backend, c
   - Loading states
 
 #### Components
+
 - **WorkflowCanvas.tsx** - Zustand integration, MiniMap, enhanced styling
 - **AppSidebar.tsx** - User info section, logout button, improved styling
 - **All Node Components** - Selection state, configuration preview, gradient icons
@@ -104,10 +116,12 @@ This document summarizes all changes made to connect the frontend and backend, c
 ## API Endpoints Reference
 
 ### Authentication
+
 - `POST /auth/signup` - Create new user
 - `POST /auth/signin` - Login, returns JWT token
 
 ### Workflows
+
 - `GET /workf/workflow` - List user's workflows
 - `POST /workf/workflow` - Create workflow (generates webhook_path)
 - `GET /workf/workflow/{id}` - Get single workflow
@@ -115,11 +129,13 @@ This document summarizes all changes made to connect the frontend and backend, c
 - `DELETE /workf/workflow/{id}` - Delete workflow
 
 ### Credentials
+
 - `GET /credential/credential` - List user's credentials
 - `POST /credential/credential` - Create credential
 - `DELETE /credential/credential/{id}` - Delete credential
 
 ### Webhooks
+
 - `GET/POST /webh/webhook/{webhook_path}` - Execute workflow by webhook path
 - `GET/POST /webh/webhook/handler/{id}` - Execute workflow by ID (legacy)
 - `POST /webh/webhook/test/{id}` - Test mode execution
@@ -132,11 +148,11 @@ Using **Zustand** for workflow editor state:
 
 ```typescript
 // Key state
-currentWorkflow, workflowTitle, nodes, edges, selectedNodeId
+(currentWorkflow, workflowTitle, nodes, edges, selectedNodeId);
 
-// Key actions  
-loadWorkflow, saveWorkflow, createWorkflow, executeWorkflow
-addNode, updateNodeData, selectNode
+// Key actions
+(loadWorkflow, saveWorkflow, createWorkflow, executeWorkflow);
+(addNode, updateNodeData, selectNode);
 ```
 
 ---

@@ -14,11 +14,7 @@ export const signIn = async (email: string, password: string): Promise<AuthUser>
   return user;
 };
 
-export const signUp = async (
-  email: string,
-  password: string,
-  name?: string,
-): Promise<AuthUser> => {
+export const signUp = async (email: string, password: string, name?: string): Promise<AuthUser> => {
   const { user } = await request(AuthResponseSchema, {
     method: "POST",
     url: "/auth/signup",

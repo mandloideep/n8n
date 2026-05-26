@@ -18,16 +18,24 @@ import { PlatformType } from "@/types/workflow";
 import { CredentialFormSchema } from "@/lib/schemas";
 import { toast } from "sonner";
 
-const platformConfigs: Record<PlatformType, { 
-  label: string; 
-  icon: string; 
-  fields: { key: string; label: string; type: string; placeholder: string }[] 
-}> = {
+const platformConfigs: Record<
+  PlatformType,
+  {
+    label: string;
+    icon: string;
+    fields: { key: string; label: string; type: string; placeholder: string }[];
+  }
+> = {
   telegram: {
     label: "Telegram",
     icon: "💬",
     fields: [
-      { key: "access_token", label: "Bot Access Token", type: "password", placeholder: "Enter your Telegram bot token" },
+      {
+        key: "access_token",
+        label: "Bot Access Token",
+        type: "password",
+        placeholder: "Enter your Telegram bot token",
+      },
     ],
   },
   email: {
@@ -35,14 +43,24 @@ const platformConfigs: Record<PlatformType, {
     icon: "📧",
     fields: [
       { key: "from_email", label: "From Email", type: "email", placeholder: "your@gmail.com" },
-      { key: "app_password", label: "App Password", type: "password", placeholder: "Enter Gmail app password" },
+      {
+        key: "app_password",
+        label: "App Password",
+        type: "password",
+        placeholder: "Enter Gmail app password",
+      },
     ],
   },
   slack: {
     label: "Slack",
     icon: "#️⃣",
     fields: [
-      { key: "webhook_url", label: "Webhook URL", type: "url", placeholder: "https://hooks.slack.com/..." },
+      {
+        key: "webhook_url",
+        label: "Webhook URL",
+        type: "url",
+        placeholder: "https://hooks.slack.com/...",
+      },
     ],
   },
   trigger: {
@@ -58,7 +76,7 @@ export function CredentialForm() {
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState<PlatformType | "">("");
   const [data, setData] = useState<Record<string, string>>({});
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -80,24 +98,20 @@ export function CredentialForm() {
       setIsLoading(false);
     }
   };
-  
+
   const handleFieldChange = (key: string, value: string) => {
-    setData(prev => ({ ...prev, [key]: value }));
+    setData((prev) => ({ ...prev, [key]: value }));
   };
-  
+
   const selectedConfig = platform ? platformConfigs[platform] : null;
-  
+
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/credentials")}
-        className="mb-6"
-      >
+      <Button variant="ghost" onClick={() => navigate("/credentials")} className="mb-6">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Credentials
       </Button>
-      
+
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Create Credential</CardTitle>
@@ -120,7 +134,7 @@ export function CredentialForm() {
                 required
               />
             </div>
-            
+
             {/* Platform */}
             <div className="space-y-2">
               <Label>Platform *</Label>
@@ -130,7 +144,7 @@ export function CredentialForm() {
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(platformConfigs)
-                    .filter(([key]) => key !== 'trigger')
+                    .filter(([key]) => key !== "trigger")
                     .map(([key, config]) => (
                       <SelectItem key={key} value={key}>
                         <span className="flex items-center gap-2">
@@ -142,7 +156,7 @@ export function CredentialForm() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Platform-specific fields */}
             {selectedConfig && selectedConfig.fields.length > 0 && (
               <div className="space-y-4 p-4 bg-secondary/20 rounded-lg border border-border/30">
@@ -165,7 +179,7 @@ export function CredentialForm() {
                 ))}
               </div>
             )}
-            
+
             {/* Submit */}
             <div className="flex gap-3 pt-4">
               <Button
