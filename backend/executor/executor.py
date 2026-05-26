@@ -1,46 +1,50 @@
 import asyncio
-import os
+import logging
 import smtplib
+from collections import defaultdict, deque
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from telegram import Bot
-from dotenv import load_dotenv
 
-from sqlalchemy.orm import Session
 from sqlalchemy import select
-from pathlib import Path
-import sys
+from sqlalchemy.orm import Session
+from telegram import Bot
 
-# Add the backend folder to sys.path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+from db.encryption import decrypt_dict
+from models.credentials import Credentials
 from schema_cred_data.email_cred_val import EmailCredential
 from schema_cred_data.tele_cred_val import TelegramCredential
-from models.credentials import Credentials
 from schemas.workflow import WorkflowResponse
 
-load_dotenv()
+logger = logging.getLogger(__name__)
+
 
 # -------- Node Implementations -------- #
 
 async def trigger_node(node_data: dict, context: dict, db: Session = None):
-    print(f"Trigger activated: {node_data}")
+    logger.info("trigger_node_activated", extra={"node_data": node_data})
     return {"triggered": True}
 
 
-def get_email_credentials(db: Session, id: str) -> EmailCredential:
-    stmt = select(Credentials).where(Credentials.id == id)
+def _load_credentials(db: Session, cred_id: int) -> dict:
+    stmt = select(Credentials).where(Credentials.id == cred_id)
     result = db.execute(stmt).scalars().first()
-
     if not result:
-        raise ValueError("❌ Email credentials not found in DB")
+        raise ValueError("Credential not found")
+    return decrypt_dict(result.data)
 
-    return EmailCredential(**result.data)
+
+def get_email_credentials(db: Session, cred_id: int) -> EmailCredential:
+    return EmailCredential(**_load_credentials(db, cred_id))
+
+
+def get_telegram_credentials(db: Session, cred_id: int) -> TelegramCredential:
+    return TelegramCredential(**_load_credentials(db, cred_id))
 
 
 async def email_node(node_data: dict, context: dict, db: Session):
     credential_id = node_data.get("credential_id")
     if not credential_id:
-        raise ValueError("❌ credential_id is required in node_data for email node")
+        raise ValueError("credential_id is required for email node")
 
     creds = get_email_credentials(db, credential_id)
 
@@ -50,93 +54,72 @@ async def email_node(node_data: dict, context: dict, db: Session):
     subject = node_data.get("subject", "No Subject")
     message = node_data.get("body", "")
 
-    def _send_email():  # ✅ regular function now
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-
+    def _send_email():
         msg = MIMEMultipart()
         msg["From"] = from_email
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.attach(MIMEText(message, "plain"))
 
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(from_email, app_password)
-        server.sendmail(from_email, to_email, msg.as_string())
-        server.quit()
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        try:
+            server.starttls()
+            server.login(from_email, app_password)
+            server.sendmail(from_email, to_email, msg.as_string())
+        finally:
+            server.quit()
 
     try:
-        # ✅ offload blocking SMTP work to thread
         await asyncio.to_thread(_send_email)
-        print(f"✅ Email sent to {to_email}")
+        logger.info("email_sent", extra={"to": to_email})
         return {"email_status": "sent", "to": to_email}
-    except Exception as e:
-        print(f"❌ Error sending email: {e}")
-        return {"email_status": "failed", "error": str(e)}
-
-
-def get_telegram_credentials(db: Session, id: str) -> TelegramCredential:
-    stmt = select(Credentials).where(Credentials.id == id)
-    result = db.execute(stmt).scalars().first()
-
-    if not result:
-        raise ValueError("❌ Telegram credentials not found in DB")
-
-    return TelegramCredential(**result.data)
+    except Exception:
+        logger.exception("email_send_failed", extra={"to": to_email})
+        return {"email_status": "failed"}
 
 
 async def telegram_node(node_data: dict, context: dict, db: Session):
     credential_id = node_data.get("credential_id")
     if not credential_id:
-        raise ValueError("❌ credential_id is required in node_data for telegram node")
+        raise ValueError("credential_id is required for telegram node")
 
     creds = get_telegram_credentials(db, credential_id)
 
-    access_token = creds.access_token
-    chat_id = int(node_data.get("chat_id"))
+    raw_chat = node_data.get("chat_id")
+    try:
+        chat_id = int(raw_chat) if raw_chat is not None else None
+    except (TypeError, ValueError):
+        raise ValueError("chat_id must be an integer")
+    if chat_id is None:
+        raise ValueError("chat_id is required for telegram node")
+
     message = node_data.get("message", "")
 
     try:
-        bot = Bot(token=access_token)
-        # ✅ Bot.send_message is async → await directly
+        bot = Bot(token=creds.access_token)
         await bot.send_message(chat_id=chat_id, text=message)
-        print(f"✅ Telegram message sent to chat_id {chat_id}")
+        logger.info("telegram_sent", extra={"chat_id": chat_id})
         return {"telegram_status": "sent", "chat_id": chat_id}
-    except Exception as e:
-        print(f"❌ Error sending Telegram message: {e}")
-        return {"telegram_status": "failed", "error": str(e)}
+    except Exception:
+        logger.exception("telegram_send_failed", extra={"chat_id": chat_id})
+        return {"telegram_status": "failed"}
 
 
 # -------- Workflow Executor -------- #
 
-from collections import defaultdict, deque
-from sqlalchemy.orm import Session
-from schemas.workflow import WorkflowResponse
-
 async def execute_workflow(workflow_data: WorkflowResponse, db: Session, initial_context: dict = None):
-    """
-    Execute a workflow by processing nodes in topological order.
-    
-    Args:
-        workflow_data: The workflow to execute
-        db: Database session
-        initial_context: Optional initial context (e.g., webhook request data)
-    """
     node_map = {
         "trigger": trigger_node,
         "email": email_node,
         "telegram": telegram_node,
     }
 
-    # Handle empty nodes
     if not workflow_data.nodes:
         return {"status": "completed", "message": "No nodes to execute"}
 
     nodes = {node.id: node for node in workflow_data.nodes}
     connections = workflow_data.connections or []
 
-    # Step 1: Build adjacency list (graph)
     graph = defaultdict(list)
     in_degree = {node.id: 0 for node in workflow_data.nodes}
 
@@ -144,17 +127,14 @@ async def execute_workflow(workflow_data: WorkflowResponse, db: Session, initial
         graph[conn.source].append(conn.target)
         in_degree[conn.target] += 1
 
-    # Step 2: Find start nodes (in-degree = 0, usually trigger)
     queue = deque([nid for nid, deg in in_degree.items() if deg == 0])
 
     if not queue:
-        raise ValueError("❌ No start node found (check workflow connections)")
+        raise ValueError("No start node found (check workflow connections)")
 
-    # Initialize context with incoming data (webhook payload, etc.)
     context = initial_context.copy() if initial_context else {}
     executed_nodes = []
 
-    # Step 3: Process nodes in topological order
     while queue:
         node_id = queue.popleft()
         node = nodes[node_id]
@@ -165,11 +145,11 @@ async def execute_workflow(workflow_data: WorkflowResponse, db: Session, initial
         if getattr(node, "credential_id", None):
             node_data["credential_id"] = node.credential_id
 
-        print(f"\n🚀 Executing node: {node.name} ({node_type})")
+        logger.info("node_executing", extra={"node_id": node_id, "platform": node_type})
 
         handler = node_map.get(node_type)
         if not handler:
-            print(f"⚠️ No handler for node platform: {node_type}")
+            logger.warning("node_no_handler", extra={"platform": node_type})
             executed_nodes.append({"id": node_id, "name": node.name, "status": "skipped"})
             continue
 
@@ -178,11 +158,15 @@ async def execute_workflow(workflow_data: WorkflowResponse, db: Session, initial
             context.update(result or {})
             executed_nodes.append({"id": node_id, "name": node.name, "status": "success"})
         except Exception as e:
-            print(f"❌ Error executing node {node.name}: {e}")
-            executed_nodes.append({"id": node_id, "name": node.name, "status": "error", "error": str(e)})
-            raise
+            logger.exception("node_execution_failed", extra={"node_id": node_id, "node_name": node.name})
+            executed_nodes.append({
+                "id": node_id,
+                "name": node.name,
+                "status": "error",
+                "error": str(e),
+            })
+            # Continue to downstream nodes — caller can inspect executed_nodes for failures.
 
-        # Step 4: Update in-degree of neighbors
         for neighbor in graph[node_id]:
             in_degree[neighbor] -= 1
             if in_degree[neighbor] == 0:
@@ -191,11 +175,5 @@ async def execute_workflow(workflow_data: WorkflowResponse, db: Session, initial
     return {
         "status": "completed",
         "executed_nodes": executed_nodes,
-        "context": {k: v for k, v in context.items() if k != "webhook"}
+        "context": {k: v for k, v in context.items() if k != "webhook"},
     }
-
-
-if __name__ == "__main__":
-    from db.database import SessionLocal
-    db = SessionLocal()
-    asyncio.run(execute_workflow(workflow_data, db))

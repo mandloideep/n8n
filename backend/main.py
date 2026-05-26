@@ -1,17 +1,59 @@
+import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pythonjsonlogger.json import JsonFormatter
+
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from core.config import settings
-from db.database import create_table
+from core.limiter import limiter
 from routers import auth, credential, webhook, workflow
 
-create_table()
+logger = logging.getLogger(__name__)
+
+
+def _run_migrations() -> None:
+    cfg = AlembicConfig("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    alembic_command.upgrade(cfg, "head")
+
+
+def _configure_logging() -> None:
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        JsonFormatter(
+            "%(asctime)s %(name)s %(levelname)s %(message)s",
+            rename_fields={"asctime": "timestamp", "levelname": "level"},
+        )
+    )
+    root = logging.getLogger()
+    root.handlers = [handler]
+    root.setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+
+
+_configure_logging()
 
 _is_prod = settings.ENV == "production"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _run_migrations()
+    logger.info("startup_complete", extra={"env": settings.ENV})
+    yield
+    logger.info("shutdown")
+
 
 app = FastAPI(
     title="Workflow Builder",
@@ -19,7 +61,12 @@ app = FastAPI(
     version="0.1.0",
     docs_url=None if _is_prod else "/docs",
     redoc_url=None if _is_prod else "/redoc",
+    lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

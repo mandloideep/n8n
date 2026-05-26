@@ -34,7 +34,7 @@ USER app
 
 EXPOSE 8001
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8001/api/health',timeout=3).status==200 else 1)"
 
 CMD ["uvicorn", "main:app", \

@@ -1,29 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from db.database import get_db
 from models.workflow import Workflow
 from models.user import User
 from schemas.workflow import WorkflowCreate, WorkflowResponse, WorkflowUpdate
+from schemas.pagination import Paginated
 
-from jose import jwt, JWTError
-from routers.auth import SECRET_KEY, ALGORITHM
-from fastapi.security import OAuth2PasswordBearer
+from routers.auth import get_current_user
 
 
 router = APIRouter(tags=["Workflow"])
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id_str = payload.get("sub")
-        if user_id_str is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return int(user_id_str)
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
 
 # Create workflow
 @router.post("/workflow", response_model=WorkflowResponse)
@@ -46,12 +32,17 @@ def create_workflow(
 
 
 # Get all workflows
-@router.get("/workflow", response_model=list[WorkflowResponse])
+@router.get("/workflow", response_model=Paginated[WorkflowResponse])
 def get_all_workflows(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user_id: int = Depends(get_current_user),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
 ):
-    return db.query(Workflow).filter(Workflow.user_id == user_id).all()
+    base = db.query(Workflow).filter(Workflow.user_id == user_id)
+    total = base.count()
+    items = base.order_by(Workflow.id.desc()).offset(offset).limit(limit).all()
+    return Paginated[WorkflowResponse](items=items, total=total, limit=limit, offset=offset)
 
 
 # Get workflow by ID

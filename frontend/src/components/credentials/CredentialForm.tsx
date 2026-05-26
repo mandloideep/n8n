@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createCredential } from "@/services/credential.service";
 import { PlatformType } from "@/types/workflow";
+import { CredentialFormSchema } from "@/lib/schemas";
 import { toast } from "sonner";
 
 const platformConfigs: Record<PlatformType, { 
@@ -59,24 +60,21 @@ export function CredentialForm() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!title || !platform) {
-      toast.error("Please fill in all required fields");
+
+    const parsed = CredentialFormSchema.safeParse({ title, platform, data });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Invalid credential form");
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      await createCredential({
-        title,
-        platform: platform as PlatformType,
-        data,
-      });
+      await createCredential(parsed.data);
       toast.success("Credential created successfully!");
       navigate("/credentials");
     } catch (error: any) {
-      toast.error(error.message || "Failed to create credential");
+      toast.error(error?.response?.data?.detail || error?.message || "Failed to create credential");
     } finally {
       setIsLoading(false);
     }

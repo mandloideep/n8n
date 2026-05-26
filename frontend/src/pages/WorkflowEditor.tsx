@@ -78,7 +78,7 @@ export default function WorkflowEditor() {
   
   const copyWebhookUrl = () => {
     if (currentWorkflow?.webhook_path) {
-      const webhookUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/webh/webhook/${currentWorkflow.webhook_path}`;
+      const webhookUrl = `${window.location.origin}/webh/webhook/${currentWorkflow.webhook_path}`;
       navigator.clipboard.writeText(webhookUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

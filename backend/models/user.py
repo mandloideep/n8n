@@ -11,3 +11,4 @@ class User(Base):
     name = Column(String, nullable=True)
 
     workflows = relationship("Workflow", back_populates="user", cascade="all, delete-orphan")
+    credentials = relationship("Credentials", back_populates="user", cascade="all, delete-orphan")

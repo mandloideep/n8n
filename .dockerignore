@@ -20,6 +20,7 @@ backend/venv
 backend/.pytest_cache
 backend/test.db
 backend/*.db
+backend/uv.lock
 *.pyc
 *.pyo
 

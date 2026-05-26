@@ -1,13 +1,23 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { Zap, Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Zap } from "lucide-react";
+import { toast } from "sonner";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SigninSchema, SignupSchema } from "@/lib/schemas";
+
+function firstZodError(error: unknown): string {
+  if (error instanceof Error && "issues" in error) {
+    const issues = (error as any).issues as { message: string }[];
+    if (issues && issues.length) return issues[0].message;
+  }
+  return "Invalid form input";
+}
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -19,15 +29,24 @@ export default function Auth() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const raw = {
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+    };
+
+    const parsed = SigninSchema.safeParse(raw);
+    if (!parsed.success) {
+      toast.error(firstZodError(parsed.error));
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      await login(email, password);
-      toast.success('Welcome back!');
-      navigate('/workflows');
+      await login(parsed.data.email, parsed.data.password);
+      toast.success("Welcome back!");
+      navigate("/workflows");
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      toast.error(error?.response?.data?.detail || error?.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -38,18 +57,25 @@ export default function Auth() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const name = formData.get('name') as string;
+    const raw = {
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+      name: String(formData.get("name") ?? ""),
+    };
+
+    const parsed = SignupSchema.safeParse(raw);
+    if (!parsed.success) {
+      toast.error(firstZodError(parsed.error));
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      await signup(email, password, name);
-      // Auto-login after successful signup
-      await login(email, password);
-      toast.success('Account created successfully!');
-      navigate('/workflows');
+      await signup(parsed.data.email, parsed.data.password, parsed.data.name || undefined);
+      toast.success("Account created successfully!");
+      navigate("/workflows");
     } catch (error: any) {
-      toast.error(error.message || 'Signup failed');
+      toast.error(error?.response?.data?.detail || error?.message || "Signup failed");
     } finally {
       setIsLoading(false);
     }
@@ -57,30 +83,28 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute bottom-1/3 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
       </div>
-      
-      {/* Grid Pattern */}
-      <div 
+
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `
             linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px),
             linear-gradient(hsl(var(--foreground)) 1px, transparent 1px)
           `,
-          backgroundSize: '40px 40px',
+          backgroundSize: "40px 40px",
         }}
       />
-      
+
       <Card className="relative w-full max-w-md border-border/30 bg-card/40 backdrop-blur-xl shadow-2xl">
         <CardHeader className="text-center pb-2">
           <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
             <Zap className="w-7 h-7 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">WorkflowBuilder</CardTitle>
+          <CardTitle className="text-2xl">Workflow Builder</CardTitle>
           <CardDescription>Sign in to manage your workflows</CardDescription>
         </CardHeader>
         <CardContent>
@@ -89,7 +113,7 @@ export default function Auth() {
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -109,6 +133,7 @@ export default function Auth() {
                     id="login-password"
                     name="password"
                     type="password"
+                    minLength={8}
                     required
                     className="bg-background/50 border-border/50"
                   />
@@ -120,12 +145,12 @@ export default function Auth() {
                       Signing in...
                     </>
                   ) : (
-                    'Sign In'
+                    "Sign In"
                   )}
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
@@ -155,6 +180,7 @@ export default function Auth() {
                     id="signup-password"
                     name="password"
                     type="password"
+                    minLength={8}
                     required
                     className="bg-background/50 border-border/50"
                   />
@@ -166,7 +192,7 @@ export default function Auth() {
                       Creating account...
                     </>
                   ) : (
-                    'Create Account'
+                    "Create Account"
                   )}
                 </Button>
               </form>

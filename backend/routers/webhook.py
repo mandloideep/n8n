@@ -1,4 +1,5 @@
 import json
+import logging
 
 from fastapi import HTTPException, Depends, APIRouter, Request
 from sqlalchemy.orm import Session
@@ -6,47 +7,33 @@ from db.database import get_db
 from models.workflow import Workflow
 from schemas.workflow import WorkflowResponse
 from executor.executor import execute_workflow
+from routers.auth import get_current_user
+from core.limiter import limiter
 from datetime import datetime, timezone
-from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Webhook"])
 
 
 @router.api_route("/webhook/{webhook_path}", methods=["GET", "POST"])
+@limiter.limit("60/minute")
 async def webhook_handler_by_path(
-    webhook_path: str,
     request: Request,
-    db: Session = Depends(get_db)
+    webhook_path: str,
+    db: Session = Depends(get_db),
 ):
     """
-    Webhook handler that triggers workflows by their unique webhook path.
-    Accepts both GET and POST requests, passing request data to the workflow.
+    Public webhook handler. Triggers a workflow by its unique 12-char path.
+    Anonymous; the path itself is the secret.
     """
-    # Find workflow by webhook path
     workflow_data = db.query(Workflow).filter(Workflow.webhook_path == webhook_path).first()
     if not workflow_data:
         raise HTTPException(status_code=404, detail="Webhook not found")
-    
+
     if not workflow_data.enabled:
         raise HTTPException(status_code=400, detail="Workflow is disabled")
-    
-    return await _execute_webhook(workflow_data, request, db)
 
-
-@router.api_route("/webhook/handler/{workflow_id}", methods=["GET", "POST"])
-async def webhook_handler_by_id(
-    workflow_id: int,
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    """
-    Legacy webhook handler that triggers workflows by their ID.
-    Kept for backwards compatibility.
-    """
-    workflow_data = db.query(Workflow).filter(Workflow.id == workflow_id).first()
-    if not workflow_data:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-    
     return await _execute_webhook(workflow_data, request, db)
 
 
@@ -54,16 +41,19 @@ async def webhook_handler_by_id(
 async def test_webhook(
     workflow_id: int,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user),
 ):
     """
-    Test mode for workflow execution - used by frontend to test workflows
-    without needing the actual webhook URL.
+    Authenticated test-mode execution. Owner-only.
     """
-    workflow_data = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+    workflow_data = db.query(Workflow).filter(
+        Workflow.id == workflow_id,
+        Workflow.user_id == user_id,
+    ).first()
     if not workflow_data:
         raise HTTPException(status_code=404, detail="Workflow not found")
-    
+
     return await _execute_webhook(workflow_data, request, db, test_mode=True)
 
 
@@ -71,23 +61,17 @@ async def _execute_webhook(
     workflow_data: Workflow,
     request: Request,
     db: Session,
-    test_mode: bool = False
+    test_mode: bool = False,
 ):
-    """
-    Internal function to execute a workflow via webhook.
-    Passes request body and query params to the workflow context.
-    """
-    # Parse incoming data
     body = {}
     query_params = dict(request.query_params)
-    
+
     if request.method == "POST":
         try:
             body = await request.json()
         except (json.JSONDecodeError, ValueError):
             body = {}
-    
-    # Build initial context exposing the inbound webhook request to nodes.
+
     initial_context = {
         "webhook": {
             "method": request.method,
@@ -98,7 +82,7 @@ async def _execute_webhook(
         },
         "test_mode": test_mode,
     }
-    
+
     workflow_schema = WorkflowResponse.model_validate(workflow_data)
 
     execution_start = datetime.now(timezone.utc)
@@ -111,20 +95,29 @@ async def _execute_webhook(
 
         execution_end = datetime.now(timezone.utc)
         execution_time_ms = (execution_end - execution_start).total_seconds() * 1000
-        
+
         return {
             "workflow_id": workflow_data.id,
             "webhook_path": workflow_data.webhook_path,
             "status": "success",
             "test_mode": test_mode,
             "execution_time_ms": round(execution_time_ms, 2),
-            "result": result
+            "result": result,
         }
-        
-    except Exception as e:
+
+    except Exception:
         execution_end = datetime.now(timezone.utc)
         execution_time_ms = (execution_end - execution_start).total_seconds() * 1000
-        
+
+        logger.exception(
+            "workflow_execution_failed",
+            extra={
+                "workflow_id": workflow_data.id,
+                "test_mode": test_mode,
+                "execution_time_ms": round(execution_time_ms, 2),
+            },
+        )
+
         raise HTTPException(
             status_code=500,
             detail={
@@ -132,6 +125,6 @@ async def _execute_webhook(
                 "status": "failed",
                 "test_mode": test_mode,
                 "execution_time_ms": round(execution_time_ms, 2),
-                "error": str(e)
-            }
+                "error": "Workflow execution failed",
+            },
         )
