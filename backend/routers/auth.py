@@ -147,9 +147,7 @@ async def signup(
     user: UserCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    existing = (
-        await db.execute(select(User).where(User.email == user.email))
-    ).scalar_one_or_none()
+    existing = (await db.execute(select(User).where(User.email == user.email))).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
 
@@ -179,9 +177,7 @@ async def signin(
     user: UserLogin,
     db: AsyncSession = Depends(get_db),
 ):
-    db_user = (
-        await db.execute(select(User).where(User.email == user.email))
-    ).scalar_one_or_none()
+    db_user = (await db.execute(select(User).where(User.email == user.email))).scalar_one_or_none()
 
     # Always run argon2 verification (even on missing user) so timing
     # doesn't leak whether an email exists — and offload so the event loop
@@ -299,9 +295,7 @@ async def signout(
                 if payload.get("type") == "refresh":
                     row = (
                         await db.execute(
-                            select(RefreshToken).where(
-                                RefreshToken.jti == payload.get("jti")
-                            )
+                            select(RefreshToken).where(RefreshToken.jti == payload.get("jti"))
                         )
                     ).scalar_one_or_none()
                     if row:
@@ -326,9 +320,7 @@ async def me(
     user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user = (
-        await db.execute(select(User).where(User.id == user_id))
-    ).scalar_one_or_none()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return {

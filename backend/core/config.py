@@ -1,6 +1,18 @@
 from typing import List
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import field_validator, BeforeValidator
+from typing_extensions import Annotated
+
+
+def _blank_to_zero(v: object) -> object:
+    # `.env` files commonly leave optional ints set to "" (Dokploy does this
+    # when a field is cleared in the UI). Treat that as the default.
+    if isinstance(v, str) and v.strip() == "":
+        return 0
+    return v
+
+
+BlankableInt = Annotated[int, BeforeValidator(_blank_to_zero)]
 
 
 class Settings(BaseSettings):
@@ -17,7 +29,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
 
     TELEGRAM_BOT_TOKEN: str = ""
-    TELEGRAM_CHAT_ID: int = 0
+    TELEGRAM_CHAT_ID: BlankableInt = 0
 
     STATIC_DIR: str = "static"
 

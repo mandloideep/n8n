@@ -6,7 +6,6 @@
 # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
-
 # def get_email_credentials(db: Session, id: str) -> EmailCredential:
 #     """
 #     Fetch email credentials from DB using the Credentials table.
@@ -25,7 +24,7 @@
 
 # def email_node(node_data: dict, context: dict, db: Session):
 #     credential_id = node_data.get("credential_id")  # 👈 fetch from node_data
-    
+
 #     if not credential_id:
 #         raise ValueError("❌ credential_id is required in node_data")
 
@@ -54,31 +53,13 @@
 #         db.close()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from models.credentials import Credentials  # your ORM model
 from schema_cred_data.tele_cred_val import TelegramCredential  # Pydantic schema
 import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
 def get_telegram_credentials(db: Session, id: str) -> TelegramCredential:
@@ -99,7 +80,7 @@ def get_telegram_credentials(db: Session, id: str) -> TelegramCredential:
 
 def telegram_node(node_data: dict, context: dict, db: Session):
     credential_id = node_data.get("credential_id")  # 👈 fetch from node_data
-    
+
     if not credential_id:
         raise ValueError("❌ credential_id is required in node_data")
 
@@ -107,11 +88,11 @@ def telegram_node(node_data: dict, context: dict, db: Session):
 
     access_token = creds.access_token
 
-
     # Debug print
     print("🔎 Raw DB credential data:", creds.dict())
     print(f"✅ Extracted access_token: {access_token}")
-    
+
+
 from db.database import SessionLocal
 
 if __name__ == "__main__":

@@ -2,3 +2,6 @@
 # Install locally with:  pip install -r requirements.txt -r requirements-dev.txt
 # Or via uv:             uv sync --extra dev
 ruff==0.14.5
+# Async sqlite driver for local dev. Prod uses psycopg3 against Neon Postgres,
+# which is async-native — aiosqlite never ships in the Docker image.
+aiosqlite==0.22.1

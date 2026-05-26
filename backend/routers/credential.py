@@ -35,14 +35,18 @@ async def get_all_credentials(
         )
     ).scalar_one()
     rows = (
-        await db.execute(
-            select(Credentials)
-            .where(Credentials.user_id == user_id)
-            .order_by(Credentials.id.desc())
-            .offset(offset)
-            .limit(limit)
+        (
+            await db.execute(
+                select(Credentials)
+                .where(Credentials.user_id == user_id)
+                .order_by(Credentials.id.desc())
+                .offset(offset)
+                .limit(limit)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return Paginated[CredentialResponse](
         items=[_to_response(c) for c in rows],
         total=total,

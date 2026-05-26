@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class ExecutionBase(BaseModel):
     workflow_id: int
     status: str = "pending"

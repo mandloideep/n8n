@@ -6,6 +6,7 @@ from schema_node.email_val import EmailData
 from schema_node.tele_val import TelegramData
 from schema_node.trigger_val import TriggerData
 
+
 class Node(BaseModel):
     id: str
     platform: PlatformType
@@ -36,20 +37,24 @@ class Connection(BaseModel):
     source: str
     target: str
 
+
 class WorkflowBase(BaseModel):
     title: str
     enabled: Optional[bool] = True
     nodes: Optional[List[Node]] = None
     connections: Optional[List[Connection]] = None
 
+
 class WorkflowCreate(WorkflowBase):
     pass
+
 
 class WorkflowUpdate(BaseModel):
     title: Optional[str] = None
     enabled: Optional[bool] = None
     nodes: Optional[List[Node]] = None
     connections: Optional[List[Connection]] = None
+
 
 class WorkflowResponse(WorkflowBase):
     id: int

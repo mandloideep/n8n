@@ -21,9 +21,7 @@ async def create_workflow(
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
 ):
-    user = (
-        await db.execute(select(User).where(User.id == user_id))
-    ).scalar_one_or_none()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -49,14 +47,18 @@ async def get_all_workflows(
         )
     ).scalar_one()
     items = (
-        await db.execute(
-            select(Workflow)
-            .where(Workflow.user_id == user_id)
-            .order_by(Workflow.id.desc())
-            .offset(offset)
-            .limit(limit)
+        (
+            await db.execute(
+                select(Workflow)
+                .where(Workflow.user_id == user_id)
+                .order_by(Workflow.id.desc())
+                .offset(offset)
+                .limit(limit)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return Paginated[WorkflowResponse](items=items, total=total, limit=limit, offset=offset)
 
 

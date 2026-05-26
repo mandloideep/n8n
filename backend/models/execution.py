@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from db.database import Base
 
+
 class Execution(Base):
     __tablename__ = "executions"
 

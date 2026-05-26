@@ -86,6 +86,7 @@ async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSON
     )
     return JSONResponse(status_code=500, content={"detail": "internal server error"})
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -118,6 +119,7 @@ if os.path.isdir(_assets_dir):
 
 
 if os.path.isdir(settings.STATIC_DIR):
+
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa_fallback(full_path: str):
         return FileResponse(f"{settings.STATIC_DIR}/index.html")
@@ -125,6 +127,7 @@ if os.path.isdir(settings.STATIC_DIR):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

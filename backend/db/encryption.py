@@ -3,6 +3,7 @@
 Uses Fernet (AES-128-CBC + HMAC-SHA256) keyed by `settings.CREDENTIALS_ENCRYPTION_KEY`.
 Rotating the key invalidates all previously stored credentials.
 """
+
 import json
 
 from cryptography.fernet import Fernet, InvalidToken

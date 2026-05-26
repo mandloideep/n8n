@@ -2,6 +2,7 @@
 routers for per-endpoint @limiter.limit decorators. Lives outside main.py to
 avoid the routers ↔ main circular import.
 """
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 

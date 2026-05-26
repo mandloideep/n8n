@@ -1,6 +1,7 @@
 from typing import Optional, Dict, List
 from pydantic import BaseModel
 
+
 class WebhookBase(BaseModel):
     title: str
     method: str
@@ -24,4 +25,3 @@ class WebhookRead(WebhookBase):
 
     class Config:
         orm_mode = True
-

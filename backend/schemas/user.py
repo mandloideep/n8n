@@ -19,18 +19,19 @@ from typing import Optional, List
 #         orm_mode = True
 
 
-
-
 from pydantic import BaseModel, EmailStr
+
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str | int
     name: Optional[str] = None
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str | int
+
 
 class UserResponse(BaseModel):
     # id: int

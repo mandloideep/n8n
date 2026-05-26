@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def send_email(from_email, from_password, to_email, subject, message):
     try:
         # SMTP server setup (Gmail example, you can change as needed)
@@ -45,4 +46,3 @@ if __name__ == "__main__":
     message = "Hello! This is an automatic email sent from Python 🚀"
 
     send_email(from_email, from_password, to_email, subject, message)
-

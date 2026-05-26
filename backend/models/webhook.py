@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.sql import func
 from db.database import Base
 
+
 class Webhook(Base):
     __tablename__ = "webhooks"
 
@@ -11,6 +12,3 @@ class Webhook(Base):
     path = Column(String, nullable=False, unique=True)
     header = Column(String, nullable=True)
     secret = Column(String, nullable=True)
-
-
-

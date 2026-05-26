@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # -------- Node Implementations -------- #
 
+
 async def trigger_node(node_data: dict, context: dict, db: AsyncSession = None):
     logger.info("trigger_node_activated", extra={"node_data": node_data})
     return {"triggered": True}
@@ -108,7 +109,10 @@ async def telegram_node(node_data: dict, context: dict, db: AsyncSession):
 
 # -------- Workflow Executor -------- #
 
-async def execute_workflow(workflow_data: WorkflowResponse, db: AsyncSession, initial_context: dict = None):
+
+async def execute_workflow(
+    workflow_data: WorkflowResponse, db: AsyncSession, initial_context: dict = None
+):
     node_map = {
         "trigger": trigger_node,
         "email": email_node,
@@ -159,13 +163,17 @@ async def execute_workflow(workflow_data: WorkflowResponse, db: AsyncSession, in
             context.update(result or {})
             executed_nodes.append({"id": node_id, "name": node.name, "status": "success"})
         except Exception as e:
-            logger.exception("node_execution_failed", extra={"node_id": node_id, "node_name": node.name})
-            executed_nodes.append({
-                "id": node_id,
-                "name": node.name,
-                "status": "error",
-                "error": str(e),
-            })
+            logger.exception(
+                "node_execution_failed", extra={"node_id": node_id, "node_name": node.name}
+            )
+            executed_nodes.append(
+                {
+                    "id": node_id,
+                    "name": node.name,
+                    "status": "error",
+                    "error": str(e),
+                }
+            )
             # Continue to downstream nodes — caller can inspect executed_nodes for failures.
 
         for neighbor in graph[node_id]:

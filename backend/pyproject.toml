@@ -18,7 +18,7 @@ dependencies = [
     "python-multipart>=0.0.29",
     "python-telegram-bot>=22.4",
     "slowapi>=0.1.9",
-    "sqlalchemy>=2.0.43",
+    "sqlalchemy[asyncio]>=2.0.43",
     "uvicorn>=0.35.0",
 ]
 
@@ -27,6 +27,8 @@ dependencies = [
 # production image.
 dev = [
     "ruff>=0.14.5",
+    # Async sqlite driver for local dev DB only — prod is Postgres via psycopg3.
+    "aiosqlite>=0.20.0",
 ]
 
 [tool.ruff]

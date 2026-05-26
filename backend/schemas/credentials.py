@@ -16,6 +16,7 @@ class CredentialCreate(CredentialBase):
     """Inbound payload — `data` is validated per platform and stays a plain dict here.
     Encryption happens in the route handler before persisting.
     """
+
     data: Dict
 
     @field_validator("data")
@@ -34,6 +35,7 @@ class CredentialCreate(CredentialBase):
 
 class CredentialResponse(CredentialBase):
     """Outbound shape — `data` is the decrypted dict, populated by the route handler."""
+
     id: int
     user_id: int
     data: Dict

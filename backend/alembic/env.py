@@ -4,6 +4,7 @@ Reads DATABASE_URL from `core.config.settings` (no duplicate config in alembic.i
 and exposes the SQLAlchemy models' metadata for autogenerate. Uses the async
 engine bridge so the same URL/driver as the app works here.
 """
+
 import asyncio
 from logging.config import fileConfig
 
