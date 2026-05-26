@@ -19,7 +19,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("[ErrorBoundary]", error, info.componentStack);
+    // TODO: route to Sentry once wired. Until then, swallow — the component
+    // stack would otherwise leak app internals to anyone with devtools open.
+    void error;
+    void info;
   }
 
   handleReload = () => {

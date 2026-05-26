@@ -1,0 +1,4 @@
+# Dev-only tooling. Production image installs requirements.txt only.
+# Install locally with:  pip install -r requirements.txt -r requirements-dev.txt
+# Or via uv:             uv sync --extra dev
+ruff==0.14.5

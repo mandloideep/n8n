@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
 from db.encryption import encrypt_dict, decrypt_dict
@@ -22,15 +23,26 @@ def _to_response(cred: Credentials) -> CredentialResponse:
 
 
 @router.get("/credential", response_model=Paginated[CredentialResponse])
-def get_all_credentials(
-    db: Session = Depends(get_db),
+async def get_all_credentials(
+    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    base = db.query(Credentials).filter(Credentials.user_id == user_id)
-    total = base.count()
-    rows = base.order_by(Credentials.id.desc()).offset(offset).limit(limit).all()
+    total = (
+        await db.execute(
+            select(func.count()).select_from(Credentials).where(Credentials.user_id == user_id)
+        )
+    ).scalar_one()
+    rows = (
+        await db.execute(
+            select(Credentials)
+            .where(Credentials.user_id == user_id)
+            .order_by(Credentials.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+    ).scalars().all()
     return Paginated[CredentialResponse](
         items=[_to_response(c) for c in rows],
         total=total,
@@ -40,24 +52,28 @@ def get_all_credentials(
 
 
 @router.get("/credential/{cred_id}", response_model=CredentialResponse)
-def get_credential(
+async def get_credential(
     cred_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
 ):
-    cred = db.query(Credentials).filter(
-        Credentials.id == cred_id,
-        Credentials.user_id == user_id,
-    ).first()
+    cred = (
+        await db.execute(
+            select(Credentials).where(
+                Credentials.id == cred_id,
+                Credentials.user_id == user_id,
+            )
+        )
+    ).scalar_one_or_none()
     if not cred:
         raise HTTPException(status_code=404, detail="Credentials not found")
     return _to_response(cred)
 
 
 @router.post("/credential", response_model=CredentialResponse)
-def create_credential(
+async def create_credential(
     cred: CredentialCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
 ):
     new_cred = Credentials(
@@ -67,23 +83,27 @@ def create_credential(
         user_id=user_id,
     )
     db.add(new_cred)
-    db.commit()
-    db.refresh(new_cred)
+    await db.commit()
+    await db.refresh(new_cred)
     return _to_response(new_cred)
 
 
 @router.delete("/credential/{cred_id}")
-def delete_credential(
+async def delete_credential(
     cred_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
 ):
-    cred = db.query(Credentials).filter(
-        Credentials.id == cred_id,
-        Credentials.user_id == user_id,
-    ).first()
+    cred = (
+        await db.execute(
+            select(Credentials).where(
+                Credentials.id == cred_id,
+                Credentials.user_id == user_id,
+            )
+        )
+    ).scalar_one_or_none()
     if not cred:
         raise HTTPException(status_code=404, detail="Credentials not found")
-    db.delete(cred)
-    db.commit()
+    await db.delete(cred)
+    await db.commit()
     return {"message": "Credentials Deleted"}

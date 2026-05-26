@@ -1,44 +1,64 @@
-import { apiCaller } from "./api-caller";
-import { Credential, CredentialCreate } from "@/types/workflow";
+import { request } from "./api-caller";
+import {
+  CredentialSchema,
+  DeleteResponseSchema,
+  paginated,
+} from "@/lib/schemas";
+import type { Credential, CredentialCreate } from "@/types/workflow";
 
-interface Paginated<T> {
-  items: T[];
+const PaginatedCredentialSchema = paginated(CredentialSchema);
+export type CredentialsPage = {
+  items: Credential[];
   total: number;
   limit: number;
   offset: number;
-}
+};
 
 export const getCredentials = async (limit = 50, offset = 0): Promise<Credential[]> => {
-  const response = await apiCaller.get<Paginated<Credential>>("/credential/credential", {
+  const data = await request(PaginatedCredentialSchema, {
+    method: "GET",
+    url: "/credential/credential",
     params: { limit, offset },
   });
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to fetch credentials");
-  }
-  return response.data.items;
+  return data.items as Credential[];
+};
+
+export const getCredentialsPage = async (
+  limit = 20,
+  offset = 0,
+): Promise<CredentialsPage> => {
+  const data = await request(PaginatedCredentialSchema, {
+    method: "GET",
+    url: "/credential/credential",
+    params: { limit, offset },
+  });
+  return data as CredentialsPage;
 };
 
 export const getCredential = async (id: number): Promise<Credential> => {
-  const response = await apiCaller.get<Credential>(`/credential/credential/${id}`);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to fetch credential");
-  }
-  return response.data;
+  const data = await request(CredentialSchema, {
+    method: "GET",
+    url: `/credential/credential/${id}`,
+  });
+  return data as Credential;
 };
 
-export const createCredential = async (credential: CredentialCreate): Promise<Credential> => {
-  const response = await apiCaller.post<Credential>("/credential/credential", credential);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to create credential");
-  }
-  return response.data;
+export const createCredential = async (
+  credential: CredentialCreate,
+): Promise<Credential> => {
+  const data = await request(CredentialSchema, {
+    method: "POST",
+    url: "/credential/credential",
+    data: credential,
+  });
+  return data as Credential;
 };
 
 export const deleteCredential = async (id: number): Promise<void> => {
-  const response = await apiCaller.delete(`/credential/credential/${id}`);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to delete credential");
-  }
+  await request(DeleteResponseSchema, {
+    method: "DELETE",
+    url: `/credential/credential/${id}`,
+  });
 };
 
 export const getCredentialsByPlatform = async (platform: string): Promise<Credential[]> => {

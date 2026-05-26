@@ -1,13 +1,33 @@
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Key, Loader2, MessageCircle, Mail, Hash } from "lucide-react";
+import { useState } from "react";
+import {
+  Plus,
+  Trash2,
+  Key,
+  Loader2,
+  MessageCircle,
+  Mail,
+  Hash,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getCredentials, deleteCredential } from "@/services/credential.service";
-import { Credential } from "@/types/workflow";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from "@/components/ui/pagination";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { deleteCredential, getCredentialsPage } from "@/services/credential.service";
+import { toastError } from "@/services/api-caller";
 import { toast } from "sonner";
+
+const PAGE_SIZE = 20;
 
 const platformIcons: Record<string, React.ReactNode> = {
   telegram: <MessageCircle className="w-5 h-5 text-blue-400" />,
@@ -22,45 +42,49 @@ const platformColors: Record<string, string> = {
 };
 
 export default function Credentials() {
-  const [credentials, setCredentials] = useState<Credential[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchCredentials();
-  }, []);
+  const { data, isPending, isError } = useQuery({
+    queryKey: ["credentials", page],
+    queryFn: () => getCredentialsPage(PAGE_SIZE, page * PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
 
-  const fetchCredentials = async () => {
-    try {
-      setLoading(true);
-      const data = await getCredentials();
-      setCredentials(Array.isArray(data) ? data : []);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to fetch credentials');
-      setCredentials([]);
-    } finally {
-      setLoading(false);
-    }
+  const deleteMutation = useMutation({
+    mutationFn: deleteCredential,
+    onSuccess: () => {
+      toast.success("Credential deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["credentials"] });
+    },
+    onError: (err: unknown) => toastError(err, "Failed to delete credential"),
+  });
+
+  const handleDelete = (credentialId: number) => {
+    if (!confirm("Are you sure you want to delete this credential?")) return;
+    deleteMutation.mutate(credentialId);
   };
 
-  const handleDelete = async (credentialId: number) => {
-    if (!confirm('Are you sure you want to delete this credential?')) return;
-
-    try {
-      await deleteCredential(credentialId);
-      toast.success('Credential deleted successfully!');
-      setCredentials(credentials.filter(c => c.id !== credentialId));
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete credential');
-    }
-  };
-
-  if (loading) {
+  if (isPending) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (isError || !data) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px] text-muted-foreground">
+        Failed to load credentials.
+      </div>
+    );
+  }
+
+  const credentials = data.items;
+  const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
+  const hasPrev = page > 0;
+  const hasNext = page + 1 < totalPages;
 
   return (
     <div className="p-6">
@@ -102,14 +126,23 @@ export default function Credentials() {
           </Card>
         ) : (
           credentials.map((credential) => (
-            <Card 
-              key={credential.id} 
+            <Card
+              key={credential.id}
               className="group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${platformColors[credential.platform] || ''} opacity-30`} />
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${
+                  platformColors[credential.platform] || ""
+                } opacity-30`}
+              />
               <CardHeader className="relative flex flex-row items-start justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${platformColors[credential.platform] || 'from-secondary to-secondary/50'} flex items-center justify-center border`}>
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${
+                      platformColors[credential.platform] ||
+                      "from-secondary to-secondary/50"
+                    } flex items-center justify-center border`}
+                  >
                     {platformIcons[credential.platform] || <Key className="w-5 h-5" />}
                   </div>
                   <div>
@@ -119,8 +152,8 @@ export default function Credentials() {
                     </Badge>
                   </div>
                 </div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => handleDelete(credential.id)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
@@ -131,7 +164,9 @@ export default function Credentials() {
               <CardContent className="relative">
                 <div className="text-xs text-muted-foreground">
                   {credential.created_at && (
-                    <span>Added: {new Date(credential.created_at).toLocaleDateString()}</span>
+                    <span>
+                      Added: {new Date(credential.created_at).toLocaleDateString()}
+                    </span>
                   )}
                 </div>
               </CardContent>
@@ -139,6 +174,46 @@ export default function Credentials() {
           ))
         )}
       </div>
+
+      {data.total > PAGE_SIZE && (
+        <Pagination className="mt-8">
+          <PaginationContent>
+            <PaginationItem>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p - 1)}
+                disabled={!hasPrev}
+                aria-label="Previous page"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "icon" }),
+                  "disabled:pointer-events-none disabled:opacity-50",
+                )}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </PaginationItem>
+            <PaginationItem>
+              <span className="px-3 text-sm text-muted-foreground">
+                Page {page + 1} of {totalPages}
+              </span>
+            </PaginationItem>
+            <PaginationItem>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasNext}
+                aria-label="Next page"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "icon" }),
+                  "disabled:pointer-events-none disabled:opacity-50",
+                )}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }

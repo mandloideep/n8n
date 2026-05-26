@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Bot
 
 from db.encryption import decrypt_dict
@@ -20,33 +20,34 @@ logger = logging.getLogger(__name__)
 
 # -------- Node Implementations -------- #
 
-async def trigger_node(node_data: dict, context: dict, db: Session = None):
+async def trigger_node(node_data: dict, context: dict, db: AsyncSession = None):
     logger.info("trigger_node_activated", extra={"node_data": node_data})
     return {"triggered": True}
 
 
-def _load_credentials(db: Session, cred_id: int) -> dict:
-    stmt = select(Credentials).where(Credentials.id == cred_id)
-    result = db.execute(stmt).scalars().first()
+async def _load_credentials(db: AsyncSession, cred_id: int) -> dict:
+    result = (
+        await db.execute(select(Credentials).where(Credentials.id == cred_id))
+    ).scalar_one_or_none()
     if not result:
         raise ValueError("Credential not found")
     return decrypt_dict(result.data)
 
 
-def get_email_credentials(db: Session, cred_id: int) -> EmailCredential:
-    return EmailCredential(**_load_credentials(db, cred_id))
+async def get_email_credentials(db: AsyncSession, cred_id: int) -> EmailCredential:
+    return EmailCredential(**(await _load_credentials(db, cred_id)))
 
 
-def get_telegram_credentials(db: Session, cred_id: int) -> TelegramCredential:
-    return TelegramCredential(**_load_credentials(db, cred_id))
+async def get_telegram_credentials(db: AsyncSession, cred_id: int) -> TelegramCredential:
+    return TelegramCredential(**(await _load_credentials(db, cred_id)))
 
 
-async def email_node(node_data: dict, context: dict, db: Session):
+async def email_node(node_data: dict, context: dict, db: AsyncSession):
     credential_id = node_data.get("credential_id")
     if not credential_id:
         raise ValueError("credential_id is required for email node")
 
-    creds = get_email_credentials(db, credential_id)
+    creds = await get_email_credentials(db, credential_id)
 
     from_email = creds.from_email
     app_password = creds.app_password
@@ -78,12 +79,12 @@ async def email_node(node_data: dict, context: dict, db: Session):
         return {"email_status": "failed"}
 
 
-async def telegram_node(node_data: dict, context: dict, db: Session):
+async def telegram_node(node_data: dict, context: dict, db: AsyncSession):
     credential_id = node_data.get("credential_id")
     if not credential_id:
         raise ValueError("credential_id is required for telegram node")
 
-    creds = get_telegram_credentials(db, credential_id)
+    creds = await get_telegram_credentials(db, credential_id)
 
     raw_chat = node_data.get("chat_id")
     try:
@@ -107,7 +108,7 @@ async def telegram_node(node_data: dict, context: dict, db: Session):
 
 # -------- Workflow Executor -------- #
 
-async def execute_workflow(workflow_data: WorkflowResponse, db: Session, initial_context: dict = None):
+async def execute_workflow(workflow_data: WorkflowResponse, db: AsyncSession, initial_context: dict = None):
     node_map = {
         "trigger": trigger_node,
         "email": email_node,

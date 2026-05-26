@@ -4,7 +4,7 @@ from pydantic import field_validator
 
 
 class Settings(BaseSettings):
-    ENV: str = "development"
+    ENV: str
     API_PREFIX: str = "/api"
 
     DATABASE_URL: str
@@ -32,6 +32,16 @@ class Settings(BaseSettings):
                 "allow_credentials=True; browsers reject the wildcard+credentials combo."
             )
         return origins
+
+    @field_validator("ENV")
+    def validate_env(cls, v: str) -> str:
+        allowed = {"development", "production", "test"}
+        if v not in allowed:
+            raise ValueError(
+                f"ENV must be one of {sorted(allowed)} — got {v!r}. "
+                "Set ENV explicitly; there is no default."
+            )
+        return v
 
     @field_validator("SECRET_KEY")
     def validate_secret_key(cls, v: str) -> str:

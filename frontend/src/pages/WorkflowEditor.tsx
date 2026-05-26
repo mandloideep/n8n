@@ -78,6 +78,9 @@ export default function WorkflowEditor() {
   
   const copyWebhookUrl = () => {
     if (currentWorkflow?.webhook_path) {
+      // Assumes SPA and API share an origin (true in dev via Vite proxy and in
+      // prod where FastAPI serves the built SPA). If they ever split, replace
+      // window.location.origin with a VITE_PUBLIC_BASE_URL env value.
       const webhookUrl = `${window.location.origin}/webh/webhook/${currentWorkflow.webhook_path}`;
       navigator.clipboard.writeText(webhookUrl);
       setCopied(true);

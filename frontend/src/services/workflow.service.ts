@@ -1,61 +1,87 @@
-import { apiCaller } from "./api-caller";
-import { Workflow, WorkflowCreate, WorkflowUpdate, ExecutionResult } from "@/types/workflow";
+import { request } from "./api-caller";
+import {
+  DeleteResponseSchema,
+  ExecutionResultSchema,
+  WorkflowSchema,
+  paginated,
+} from "@/lib/schemas";
+import type {
+  Workflow,
+  WorkflowCreate,
+  WorkflowUpdate,
+  ExecutionResult,
+} from "@/types/workflow";
 
-interface Paginated<T> {
-  items: T[];
+const PaginatedWorkflowSchema = paginated(WorkflowSchema);
+export type WorkflowsPage = {
+  items: Workflow[];
   total: number;
   limit: number;
   offset: number;
-}
+};
 
 export const getWorkflows = async (limit = 50, offset = 0): Promise<Workflow[]> => {
-  const response = await apiCaller.get<Paginated<Workflow>>("/workf/workflow", {
+  const data = await request(PaginatedWorkflowSchema, {
+    method: "GET",
+    url: "/workf/workflow",
     params: { limit, offset },
   });
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to fetch workflows");
-  }
-  return response.data.items;
+  return data.items as Workflow[];
+};
+
+export const getWorkflowsPage = async (limit = 20, offset = 0): Promise<WorkflowsPage> => {
+  const data = await request(PaginatedWorkflowSchema, {
+    method: "GET",
+    url: "/workf/workflow",
+    params: { limit, offset },
+  });
+  return data as WorkflowsPage;
 };
 
 export const getWorkflow = async (id: number): Promise<Workflow> => {
-  const response = await apiCaller.get<Workflow>(`/workf/workflow/${id}`);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to fetch workflow");
-  }
-  return response.data;
+  const data = await request(WorkflowSchema, {
+    method: "GET",
+    url: `/workf/workflow/${id}`,
+  });
+  return data as Workflow;
 };
 
 export const createWorkflow = async (workflow: WorkflowCreate): Promise<Workflow> => {
-  const response = await apiCaller.post<Workflow>("/workf/workflow", workflow);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to create workflow");
-  }
-  return response.data;
+  const data = await request(WorkflowSchema, {
+    method: "POST",
+    url: "/workf/workflow",
+    data: workflow,
+  });
+  return data as Workflow;
 };
 
-export const updateWorkflow = async (id: number, workflow: WorkflowUpdate): Promise<Workflow> => {
-  const response = await apiCaller.put<Workflow>(`/workf/workflow/${id}`, workflow);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to update workflow");
-  }
-  return response.data;
+export const updateWorkflow = async (
+  id: number,
+  workflow: WorkflowUpdate,
+): Promise<Workflow> => {
+  const data = await request(WorkflowSchema, {
+    method: "PUT",
+    url: `/workf/workflow/${id}`,
+    data: workflow,
+  });
+  return data as Workflow;
 };
 
 export const deleteWorkflow = async (id: number): Promise<void> => {
-  const response = await apiCaller.delete(`/workf/workflow/${id}`);
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Failed to delete workflow");
-  }
+  await request(DeleteResponseSchema, {
+    method: "DELETE",
+    url: `/workf/workflow/${id}`,
+  });
 };
 
 export const executeWorkflow = async (id: number): Promise<ExecutionResult> => {
   if (!id || isNaN(id)) {
     throw new Error("Invalid workflow ID");
   }
-  const response = await apiCaller.post(`/webh/webhook/test/${id}`, {});
-  if (response.status !== 200) {
-    throw new Error((response.data as any)?.detail || "Execution failed");
-  }
-  return response.data as ExecutionResult;
+  const data = await request(ExecutionResultSchema, {
+    method: "POST",
+    url: `/webh/webhook/test/${id}`,
+    data: {},
+  });
+  return data as ExecutionResult;
 };

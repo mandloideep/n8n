@@ -15,7 +15,11 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 *.egg-info/
+.coverage
+htmlcov/
 
 # SQLite (dev only)
 *.db
@@ -24,10 +28,19 @@ venv/
 
 # Node
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Build output
 dist/
 build/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Test coverage
+coverage/
 
 # OS junk
 .DS_Store

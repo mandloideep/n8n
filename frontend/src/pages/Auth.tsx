@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SigninSchema, SignupSchema } from "@/lib/schemas";
+import { toastError } from "@/services/api-caller";
 
 function firstZodError(error: unknown): string {
   if (error instanceof Error && "issues" in error) {
@@ -45,8 +46,8 @@ export default function Auth() {
       await login(parsed.data.email, parsed.data.password);
       toast.success("Welcome back!");
       navigate("/workflows");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.detail || error?.message || "Login failed");
+    } catch (error: unknown) {
+      toastError(error, "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -74,8 +75,8 @@ export default function Auth() {
       await signup(parsed.data.email, parsed.data.password, parsed.data.name || undefined);
       toast.success("Account created successfully!");
       navigate("/workflows");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.detail || error?.message || "Signup failed");
+    } catch (error: unknown) {
+      toastError(error, "Signup failed");
     } finally {
       setIsLoading(false);
     }

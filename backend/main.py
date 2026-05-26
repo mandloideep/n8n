@@ -1,15 +1,17 @@
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pythonjsonlogger.json import JsonFormatter
 
 from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
+from asgi_correlation_id import CorrelationIdMiddleware, CorrelationIdFilter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -29,9 +31,10 @@ def _run_migrations() -> None:
 
 def _configure_logging() -> None:
     handler = logging.StreamHandler()
+    handler.addFilter(CorrelationIdFilter(uuid_length=32, default_value="-"))
     handler.setFormatter(
         JsonFormatter(
-            "%(asctime)s %(name)s %(levelname)s %(message)s",
+            "%(asctime)s %(name)s %(levelname)s %(correlation_id)s %(message)s",
             rename_fields={"asctime": "timestamp", "levelname": "level"},
         )
     )
@@ -49,7 +52,10 @@ _is_prod = settings.ENV == "production"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    _run_migrations()
+    # Alembic's env.py drives `asyncio.run()` internally for the async engine
+    # bridge; that conflicts with FastAPI's running event loop. Push it onto
+    # a worker thread where it can own a fresh loop.
+    await asyncio.to_thread(_run_migrations)
     logger.info("startup_complete", extra={"env": settings.ENV})
     yield
     logger.info("shutdown")
@@ -67,6 +73,18 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+# Add correlation-id LAST so it runs FIRST on the inbound side and the
+# request_id contextvar is set before any other middleware logs.
+app.add_middleware(CorrelationIdMiddleware)
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception(
+        "unhandled_exception",
+        extra={"path": str(request.url.path), "method": request.method},
+    )
+    return JSONResponse(status_code=500, content={"detail": "internal server error"})
 
 app.add_middleware(
     CORSMiddleware,

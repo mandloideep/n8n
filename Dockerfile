@@ -40,6 +40,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 CMD ["uvicorn", "main:app", \
      "--host", "0.0.0.0", \
      "--port", "8001", \
-     "--workers", "1", \
+     "--workers", "2", \
      "--proxy-headers", \
      "--forwarded-allow-ips=*"]

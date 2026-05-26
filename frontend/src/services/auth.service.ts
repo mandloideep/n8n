@@ -1,35 +1,48 @@
-import { apiCaller } from "./api-caller";
+import { request, resetAuthGuard } from "./api-caller";
+import { AuthResponseSchema, AuthUserSchema } from "@/lib/schemas";
+import { z } from "zod";
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  name?: string;
-}
+export type AuthUser = z.infer<typeof AuthUserSchema>;
 
 export const signIn = async (email: string, password: string): Promise<AuthUser> => {
-  const res = await apiCaller.post("/auth/signin", { email, password });
-  if (res.status !== 200) {
-    throw new Error(res.data?.detail || "Sign in failed");
-  }
-  return res.data.user as AuthUser;
+  const { user } = await request(AuthResponseSchema, {
+    method: "POST",
+    url: "/auth/signin",
+    data: { email, password },
+  });
+  resetAuthGuard();
+  return user;
 };
 
-export const signUp = async (email: string, password: string, name?: string): Promise<AuthUser> => {
-  const res = await apiCaller.post("/auth/signup", { email, password, name });
-  if (res.status !== 200) {
-    throw new Error(res.data?.detail || "Sign up failed");
-  }
-  return res.data.user as AuthUser;
+export const signUp = async (
+  email: string,
+  password: string,
+  name?: string,
+): Promise<AuthUser> => {
+  const { user } = await request(AuthResponseSchema, {
+    method: "POST",
+    url: "/auth/signup",
+    data: { email, password, name },
+  });
+  resetAuthGuard();
+  return user;
 };
 
 export const signOut = async (): Promise<void> => {
-  await apiCaller.post("/auth/signout");
+  await request(z.object({ message: z.string() }), {
+    method: "POST",
+    url: "/auth/signout",
+  });
 };
 
 export const getMe = async (): Promise<AuthUser | null> => {
-  const res = await apiCaller.get("/auth/me");
-  if (res.status !== 200) {
+  try {
+    const { user } = await request(AuthResponseSchema, {
+      method: "GET",
+      url: "/auth/me",
+    });
+    return user;
+  } catch {
     return null;
   }
-  return res.data.user as AuthUser;
 };

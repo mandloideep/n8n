@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
     "argon2-cffi>=25.1.0",
+    "asgi-correlation-id>=4.3.4",
     "cryptography>=48.0.0",
     "email-validator>=2.3.0",
     "fastapi>=0.116.1",
@@ -20,3 +21,35 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
 ]
+
+[project.optional-dependencies]
+# `pip install -e ".[dev]"` to get the toolchain locally without bloating the
+# production image.
+dev = [
+    "ruff>=0.14.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# Defaults (E, F) plus: import sorting (I), bugbear (B), pyupgrade (UP),
+# simplify (SIM). Add more incrementally — these are the high-signal ones.
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",   # FastAPI's `Depends(...)` is the canonical default-arg pattern
+    "SIM117", # nested `async with` is often the only readable shape
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Migration files conventionally import models with `# noqa: F401` already; let
+# them keep that pattern + tolerate longer `op.create_table(...)` lines.
+"alembic/env.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

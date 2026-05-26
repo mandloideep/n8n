@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createCredential } from "@/services/credential.service";
+import { toastError } from "@/services/api-caller";
 import { PlatformType } from "@/types/workflow";
 import { CredentialFormSchema } from "@/lib/schemas";
 import { toast } from "sonner";
@@ -73,8 +74,8 @@ export function CredentialForm() {
       await createCredential(parsed.data);
       toast.success("Credential created successfully!");
       navigate("/credentials");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.detail || error?.message || "Failed to create credential");
+    } catch (error: unknown) {
+      toastError(error, "Failed to create credential");
     } finally {
       setIsLoading(false);
     }
@@ -115,6 +116,7 @@ export function CredentialForm() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="My Telegram Bot"
                 className="bg-background/50"
+                autoComplete="off"
                 required
               />
             </div>
@@ -157,6 +159,7 @@ export function CredentialForm() {
                       onChange={(e) => handleFieldChange(field.key, e.target.value)}
                       placeholder={field.placeholder}
                       className="bg-background/50"
+                      autoComplete={field.type === "password" ? "new-password" : "off"}
                     />
                   </div>
                 ))}
