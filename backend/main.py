@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pythonjsonlogger.json import JsonFormatter
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
@@ -73,6 +74,47 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+
+# Security headers shipped from the app itself rather than via reverse-proxy
+# labels — Dokploy's standalone-app mode reconciles Swarm state on every
+# redeploy and silently wipes custom Traefik labels (see Dokploy #3222/#3333).
+# Doing it here keeps the policy in version control and immune to that wipe.
+# `setdefault` so an upstream proxy can still override.
+_SECURITY_HEADERS = {
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "img-src 'self' data:; "
+        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self'; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    ),
+}
+
+
+class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # HSTS only on TLS responses — sending it over plain HTTP is a no-op
+        # but linters flag it. Trust the X-Forwarded-Proto header that Traefik
+        # sets (uvicorn is launched with --proxy-headers).
+        is_https = request.url.scheme == "https"
+        for header, value in _SECURITY_HEADERS.items():
+            if header == "Strict-Transport-Security" and not is_https:
+                continue
+            response.headers.setdefault(header, value)
+        return response
+
+
+app.add_middleware(_SecurityHeadersMiddleware)
 # Add correlation-id LAST so it runs FIRST on the inbound side and the
 # request_id contextvar is set before any other middleware logs.
 app.add_middleware(CorrelationIdMiddleware)

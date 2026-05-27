@@ -47,6 +47,9 @@ apiCaller.interceptors.response.use(
     // session-expired redirect so wrong-password on signin doesn't loop.
     const isAuthCall =
       url.includes("/auth/signin") || url.includes("/auth/signup") || url.includes("/auth/refresh");
+    // /auth/me is a boot-time session probe — a 401 means "not logged in",
+    // not "session expired", so it must not trigger the toast + redirect.
+    const isMeCall = url.includes("/auth/me");
 
     if (status === 401 && original && !original._retry && !isAuthCall) {
       original._retry = true;
@@ -63,7 +66,7 @@ apiCaller.interceptors.response.use(
       }
     }
 
-    if (status === 401 && !isAuthCall && !isHandling401) {
+    if (status === 401 && !isAuthCall && !isMeCall && !isHandling401) {
       isHandling401 = true;
       toast.warning("Session expired — please sign in again.");
       queueMicrotask(() => {
