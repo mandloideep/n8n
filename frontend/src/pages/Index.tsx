@@ -1,122 +1,98 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Zap, ArrowRight, Workflow, Lock, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const features = [
   {
-    icon: <Workflow className="w-6 h-6" />,
-    title: "Visual Workflow Builder",
-    description: "Drag and drop nodes to create powerful automation workflows",
+    title: "Drag.",
+    body: "Sketch a flow the way you'd draw it on a napkin.",
   },
   {
-    icon: <Zap className="w-6 h-6" />,
-    title: "Multiple Integrations",
-    description: "Connect Telegram, Email, Slack, and more services seamlessly",
+    title: "Connect.",
+    body: "Telegram, email, Slack — plug into the tools you already use.",
   },
   {
-    icon: <Lock className="w-6 h-6" />,
-    title: "Secure Credentials",
-    description: "Your API keys and tokens are stored securely",
+    title: "Run.",
+    body: "Credentials stay encrypted. Webhooks fire on demand.",
   },
 ];
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
-      </div>
-
-      {/* Grid Pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage: `
-            linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px),
-            linear-gradient(hsl(var(--foreground)) 1px, transparent 1px)
-          `,
-          backgroundSize: "60px 60px",
-        }}
-      />
-
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-            <Zap className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold">WorkflowBuilder</span>
-        </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-8 py-8">
+        <span className="font-display text-2xl italic leading-none">workflow</span>
         <Link to="/auth">
-          <Button variant="outline" className="border-border/50 hover:bg-secondary/50">
-            Sign In
+          <Button
+            variant="ghost"
+            className="text-sm text-foreground/70 hover:bg-transparent hover:text-foreground"
+          >
+            Sign in
+            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         </Link>
       </header>
 
-      {/* Hero Section */}
-      <main className="relative z-10 flex flex-col items-center justify-center px-8 pt-20 pb-32">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border/50 backdrop-blur-sm mb-8">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm text-muted-foreground">Build automations visually</span>
+      <main className="mx-auto w-full max-w-6xl px-8 pb-32 pt-16 md:pt-28">
+        <div className="max-w-2xl">
+          <h1
+            className="reveal font-display text-5xl leading-[1.05] tracking-tight md:text-7xl"
+            style={{ animationDelay: "80ms" }}
+          >
+            <span className="italic">Compose. Connect.</span>
+            <br />
+            <span className="italic">Let it run.</span>
+          </h1>
+
+          <p
+            className="reveal mt-8 max-w-md text-base leading-relaxed text-muted-foreground md:text-lg"
+            style={{ animationDelay: "200ms" }}
+          >
+            Visual logic for the things you'd rather not do twice.
+          </p>
+
+          <div className="reveal mt-10 flex items-center gap-6" style={{ animationDelay: "320ms" }}>
+            <Link to="/auth">
+              <Button
+                size="lg"
+                className="rounded-md bg-foreground px-6 text-background hover:bg-primary"
+              >
+                Get started
+              </Button>
+            </Link>
+            <Link
+              to="/auth"
+              className="group inline-flex items-center gap-1.5 text-sm text-foreground/70 transition-colors hover:text-foreground"
+            >
+              View a demo
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-bold text-center max-w-4xl leading-tight mb-6">
-          Automate Your Workflows
-          <span className="block bg-gradient-to-r from-primary via-orange-400 to-primary bg-clip-text text-transparent">
-            Without Code
-          </span>
-        </h1>
-
-        <p className="text-xl text-muted-foreground text-center max-w-2xl mb-10">
-          Connect your favorite apps and services. Create powerful automations with our intuitive
-          visual builder. No coding required.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link to="/auth">
-            <Button
-              size="lg"
-              className="bg-primary hover:bg-primary/90 text-lg px-8 shadow-lg shadow-primary/20 group"
-            >
-              Get Started
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
-          <Link to="/auth">
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 border-border/50 hover:bg-secondary/50"
-            >
-              View Demo
-            </Button>
-          </Link>
-        </div>
-
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-6 mt-24 max-w-5xl w-full">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group p-6 rounded-2xl bg-card/30 border border-border/30 backdrop-blur-sm hover:bg-card/50 hover:border-primary/20 transition-all duration-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 text-primary group-hover:scale-110 transition-transform">
-                {feature.icon}
+        <div
+          className="reveal mt-32 border-t border-border pt-12"
+          style={{ animationDelay: "440ms" }}
+        >
+          <div className="grid gap-12 md:grid-cols-3 md:gap-16">
+            {features.map((f) => (
+              <div key={f.title}>
+                <p className="font-display text-2xl italic leading-none">{f.title}</p>
+                <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                  {f.body}
+                </p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground text-sm">{feature.description}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-border/30 py-8 text-center text-sm text-muted-foreground">
-        <p>Built with ❤️ for automation enthusiasts</p>
+      <footer className="mx-auto w-full max-w-6xl border-t border-border px-8 py-8 text-center text-xs text-muted-foreground">
+        <p>
+          <span className="font-display italic">workflow</span>
+          <span className="mx-2">·</span>
+          made quietly
+        </p>
       </footer>
     </div>
   );

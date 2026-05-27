@@ -4,7 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { visualizer } from "rollup-plugin-visualizer";
 
-const BACKEND_URL = "http://localhost:8001";
+const BACKEND_URL = process.env.VITE_BACKEND_URL ?? "http://localhost:8001";
 const proxiedPrefixes = ["/auth", "/credential", "/workf", "/webh", "/api"];
 
 const proxy = Object.fromEntries(

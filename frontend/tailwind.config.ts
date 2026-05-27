@@ -18,6 +18,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['"Instrument Serif"', "ui-serif", "Georgia", "serif"],
+        sans: ['"Inter Tight"', "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -62,18 +67,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Workflow node colors
-        node: {
-          webhook: "hsl(var(--node-webhook))",
-          telegram: "hsl(var(--node-telegram))",
-          gmail: "hsl(var(--node-gmail))",
-        },
-        // Canvas colors
         canvas: {
           background: "hsl(var(--canvas-background))",
           grid: "hsl(var(--canvas-grid))",
         },
-        // Connection colors
         connection: {
           line: "hsl(var(--connection-line))",
           active: "hsl(var(--connection-active))",
@@ -86,20 +83,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {

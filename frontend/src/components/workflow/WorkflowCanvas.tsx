@@ -1,9 +1,8 @@
 import { useCallback, useEffect } from "react";
 import ReactFlow, {
   Node,
-  Edge,
-  addEdge,
   Connection,
+  addEdge,
   useNodesState,
   useEdgesState,
   Controls,
@@ -18,10 +17,10 @@ import { WebhookNode } from "./nodes/WebhookNode";
 import { TelegramNode } from "./nodes/TelegramNode";
 import { GmailNode } from "./nodes/GmailNode";
 import { SlackNode } from "./nodes/SlackNode";
-import { Button } from "@/components/ui/button";
-import { Webhook, MessageCircle, Mail, Hash } from "lucide-react";
+import { Webhook, MessageCircle, Mail, Hash, Plus } from "lucide-react";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { PlatformType } from "@/types/workflow";
+import { cn } from "@/lib/utils";
 
 const nodeTypes = {
   webhook: WebhookNode,
@@ -29,6 +28,17 @@ const nodeTypes = {
   gmail: GmailNode,
   slack: SlackNode,
 };
+
+const toolbarItems: Array<{
+  type: PlatformType;
+  icon: typeof Webhook;
+  label: string;
+}> = [
+  { type: "trigger", icon: Webhook, label: "Trigger" },
+  { type: "telegram", icon: MessageCircle, label: "Telegram" },
+  { type: "email", icon: Mail, label: "Email" },
+  { type: "slack", icon: Hash, label: "Slack" },
+];
 
 export function WorkflowCanvas() {
   const {
@@ -44,7 +54,6 @@ export function WorkflowCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(storeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(storeEdges);
 
-  // Sync local state with store
   useEffect(() => {
     setNodes(storeNodes);
   }, [storeNodes, setNodes]);
@@ -53,7 +62,6 @@ export function WorkflowCanvas() {
     setEdges(storeEdges);
   }, [storeEdges, setEdges]);
 
-  // Update store when local state changes
   useEffect(() => {
     setStoreNodes(nodes);
   }, [nodes, setStoreNodes]);
@@ -68,8 +76,8 @@ export function WorkflowCanvas() {
         addEdge(
           {
             ...params,
-            animated: true,
-            style: { stroke: "hsl(var(--primary))", strokeWidth: 2 },
+            animated: false,
+            style: { stroke: "hsl(var(--foreground) / 0.5)", strokeWidth: 1.25 },
           },
           eds,
         ),
@@ -83,7 +91,7 @@ export function WorkflowCanvas() {
   };
 
   const onNodeClick = useCallback(
-    (_: any, node: Node) => {
+    (_: unknown, node: Node) => {
       selectNode(node.id);
     },
     [selectNode],
@@ -108,75 +116,56 @@ export function WorkflowCanvas() {
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
+        proOptions={{ hideAttribution: true }}
         className="bg-canvas-background"
         defaultEdgeOptions={{
-          animated: true,
-          style: { stroke: "hsl(var(--primary))", strokeWidth: 2 },
+          animated: false,
+          style: { stroke: "hsl(var(--foreground) / 0.5)", strokeWidth: 1.25 },
         }}
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
+          gap={24}
           size={1}
           color="hsl(var(--canvas-grid))"
         />
-        <Controls className="bg-card border border-border rounded-lg" />
+        <Controls
+          showInteractive={false}
+          className="!rounded-md !border !border-border !bg-card !shadow-none [&>button]:!border-border [&>button]:!bg-card [&>button]:!text-foreground/70 hover:[&>button]:!text-foreground"
+        />
         <MiniMap
-          className="bg-card border border-border rounded-lg"
-          nodeColor={(node) => {
-            switch (node.type) {
-              case "webhook":
-                return "hsl(25 95% 53%)";
-              case "telegram":
-                return "hsl(199 89% 48%)";
-              case "gmail":
-                return "hsl(4 90% 58%)";
-              case "slack":
-                return "hsl(280 65% 60%)";
-              default:
-                return "hsl(var(--muted))";
-            }
-          }}
+          pannable
+          zoomable
+          className="!rounded-md !border !border-border !bg-card"
+          maskColor="hsl(var(--background) / 0.6)"
+          nodeColor="hsl(var(--foreground) / 0.4)"
+          nodeStrokeWidth={0}
         />
 
-        <Panel position="top-left" className="m-4">
-          <div className="flex gap-2 bg-card/80 backdrop-blur-sm p-3 rounded-xl border border-border/50 shadow-lg">
-            <Button
-              size="sm"
-              onClick={() => handleAddNode("trigger")}
-              className="bg-orange-500/20 text-orange-500 hover:bg-orange-500/30 border border-orange-500/30"
-              variant="outline"
-            >
-              <Webhook className="w-4 h-4 mr-2" />
-              Trigger
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleAddNode("telegram")}
-              className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30"
-              variant="outline"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Telegram
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleAddNode("email")}
-              className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
-              variant="outline"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Email
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleAddNode("slack")}
-              className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30"
-              variant="outline"
-            >
-              <Hash className="w-4 h-4 mr-2" />
-              Slack
-            </Button>
+        <Panel position="top-left" className="!m-4">
+          <div className="flex items-center gap-1 rounded-md border border-border bg-card p-1 shadow-[0_1px_0_0_hsl(var(--foreground)/0.04)]">
+            <span className="px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              add
+            </span>
+            <span aria-hidden className="h-4 w-px bg-border" />
+            {toolbarItems.map((item) => (
+              <button
+                key={item.type}
+                type="button"
+                onClick={() => handleAddNode(item.type)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium",
+                  "text-foreground/70 transition-colors hover:bg-secondary hover:text-foreground",
+                )}
+              >
+                <item.icon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                {item.label}
+              </button>
+            ))}
+            <span aria-hidden className="h-4 w-px bg-border" />
+            <span className="px-2 text-muted-foreground">
+              <Plus className="h-3 w-3" strokeWidth={1.5} />
+            </span>
           </div>
         </Panel>
       </ReactFlow>

@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createCredential } from "@/services/credential.service";
 import { toastError } from "@/services/api-caller";
 import { PlatformType } from "@/types/workflow";
@@ -22,38 +21,34 @@ const platformConfigs: Record<
   PlatformType,
   {
     label: string;
-    icon: string;
     fields: { key: string; label: string; type: string; placeholder: string }[];
   }
 > = {
   telegram: {
     label: "Telegram",
-    icon: "💬",
     fields: [
       {
         key: "access_token",
-        label: "Bot Access Token",
+        label: "Bot access token",
         type: "password",
-        placeholder: "Enter your Telegram bot token",
+        placeholder: "Telegram bot token",
       },
     ],
   },
   email: {
     label: "Email (Gmail)",
-    icon: "📧",
     fields: [
-      { key: "from_email", label: "From Email", type: "email", placeholder: "your@gmail.com" },
+      { key: "from_email", label: "From email", type: "email", placeholder: "you@example.com" },
       {
         key: "app_password",
-        label: "App Password",
+        label: "App password",
         type: "password",
-        placeholder: "Enter Gmail app password",
+        placeholder: "Gmail app password",
       },
     ],
   },
   slack: {
     label: "Slack",
-    icon: "#️⃣",
     fields: [
       {
         key: "webhook_url",
@@ -65,7 +60,6 @@ const platformConfigs: Record<
   },
   trigger: {
     label: "Trigger",
-    icon: "⚡",
     fields: [],
   },
 };
@@ -90,7 +84,7 @@ export function CredentialForm() {
 
     try {
       await createCredential(parsed.data);
-      toast.success("Credential created successfully!");
+      toast.success("Credential created");
       navigate("/credentials");
     } catch (error: unknown) {
       toastError(error, "Failed to create credential");
@@ -106,108 +100,106 @@ export function CredentialForm() {
   const selectedConfig = platform ? platformConfigs[platform] : null;
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <Button variant="ghost" onClick={() => navigate("/credentials")} className="mb-6">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Credentials
+    <div className="mx-auto w-full max-w-xl px-8 py-16">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/credentials")}
+        className="mb-10 -ml-2 h-auto px-2 py-1 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
+      >
+        <ArrowLeft className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
+        Back to credentials
       </Button>
 
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Create Credential</CardTitle>
-          <CardDescription>
-            Add credentials for your integrations. These will be securely stored.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Credential Name *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="My Telegram Bot"
-                className="bg-background/50"
-                autoComplete="off"
-                required
-              />
-            </div>
+      <div className="mb-10">
+        <h1 className="font-display text-4xl italic leading-tight">New credential.</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Stored encrypted. Used only when a workflow asks for it.
+        </p>
+      </div>
 
-            {/* Platform */}
-            <div className="space-y-2">
-              <Label>Platform *</Label>
-              <Select value={platform} onValueChange={(v) => setPlatform(v as PlatformType)}>
-                <SelectTrigger className="bg-background/50">
-                  <SelectValue placeholder="Select a platform" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(platformConfigs)
-                    .filter(([key]) => key !== "trigger")
-                    .map(([key, config]) => (
-                      <SelectItem key={key} value={key}>
-                        <span className="flex items-center gap-2">
-                          <span>{config.icon}</span>
-                          <span>{config.label}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-1.5">
+          <Label htmlFor="title" className="text-xs uppercase tracking-wider text-muted-foreground">
+            Name
+          </Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. My Telegram bot"
+            className="h-11 bg-card border-border"
+            autoComplete="off"
+            required
+          />
+        </div>
 
-            {/* Platform-specific fields */}
-            {selectedConfig && selectedConfig.fields.length > 0 && (
-              <div className="space-y-4 p-4 bg-secondary/20 rounded-lg border border-border/30">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  {selectedConfig.label} Configuration
-                </h4>
-                {selectedConfig.fields.map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <Label htmlFor={field.key}>{field.label}</Label>
-                    <Input
-                      id={field.key}
-                      type={field.type}
-                      value={data[field.key] || ""}
-                      onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      className="bg-background/50"
-                      autoComplete={field.type === "password" ? "new-password" : "off"}
-                    />
-                  </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Platform</Label>
+          <Select value={platform} onValueChange={(v) => setPlatform(v as PlatformType)}>
+            <SelectTrigger className="h-11 bg-card border-border">
+              <SelectValue placeholder="Choose one" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(platformConfigs)
+                .filter(([key]) => key !== "trigger")
+                .map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    {config.label}
+                  </SelectItem>
                 ))}
-              </div>
-            )}
+            </SelectContent>
+          </Select>
+        </div>
 
-            {/* Submit */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/credentials")}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 bg-primary hover:bg-primary/90"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Credential"
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {selectedConfig && selectedConfig.fields.length > 0 && (
+          <div className="space-y-5 border-t border-border pt-6">
+            {selectedConfig.fields.map((field) => (
+              <div key={field.key} className="space-y-1.5">
+                <Label
+                  htmlFor={field.key}
+                  className="text-xs uppercase tracking-wider text-muted-foreground"
+                >
+                  {field.label}
+                </Label>
+                <Input
+                  id={field.key}
+                  type={field.type}
+                  value={data[field.key] || ""}
+                  onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  className="h-11 bg-card border-border font-mono text-sm"
+                  autoComplete={field.type === "password" ? "new-password" : "off"}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 pt-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="h-11 bg-foreground px-6 text-background hover:bg-primary"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating
+              </>
+            ) : (
+              "Create credential"
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => navigate("/credentials")}
+            className="h-11 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
