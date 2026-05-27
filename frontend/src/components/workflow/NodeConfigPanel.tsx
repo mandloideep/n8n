@@ -22,6 +22,51 @@ interface NodeData {
   credential_id: string | null;
 }
 
+const platformLabel: Record<PlatformType, string> = {
+  trigger: "Webhook trigger",
+  telegram: "Telegram message",
+  email: "Email message",
+  slack: "Slack message",
+};
+
+function PlatformIcon({ platform }: { platform: PlatformType }) {
+  const props = { className: "h-3.5 w-3.5", strokeWidth: 1.5 } as const;
+  switch (platform) {
+    case "trigger":
+      return <Webhook {...props} />;
+    case "telegram":
+      return <MessageCircle {...props} />;
+    case "email":
+      return <Mail {...props} />;
+    case "slack":
+      return <Hash {...props} />;
+    default:
+      return null;
+  }
+}
+
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label
+        htmlFor={htmlFor}
+        className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+      >
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
 export function NodeConfigPanel() {
   const { nodes, selectedNodeId, updateNodeData, selectNode } = useWorkflowStore();
   const [credentials, setCredentials] = useState<Credential[]>([]);
@@ -30,7 +75,6 @@ export function NodeConfigPanel() {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const nodeData = selectedNode?.data as NodeData | undefined;
 
-  // Load credentials for the selected platform
   useEffect(() => {
     if (nodeData?.platform && nodeData.platform !== "trigger") {
       setLoadingCredentials(true);
@@ -59,64 +103,48 @@ export function NodeConfigPanel() {
     updateNodeData(selectedNode.id, { credential_id: credentialId });
   };
 
-  const getIcon = () => {
-    switch (nodeData.platform) {
-      case "trigger":
-        return <Webhook className="w-5 h-5 text-orange-500" />;
-      case "telegram":
-        return <MessageCircle className="w-5 h-5 text-blue-400" />;
-      case "email":
-        return <Mail className="w-5 h-5 text-red-400" />;
-      case "slack":
-        return <Hash className="w-5 h-5 text-purple-400" />;
-      default:
-        return null;
-    }
-  };
+  const inputClass = "h-10 bg-card border-border";
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-            {getIcon()}
+    <div className="flex h-full flex-col bg-card">
+      <div className="flex items-start justify-between border-b border-border px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded border border-border bg-background text-foreground/80">
+            <PlatformIcon platform={nodeData.platform} />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">Node Configuration</h3>
-            <p className="text-xs text-muted-foreground capitalize">{nodeData.platform}</p>
+            <p className="text-sm font-medium leading-tight">{platformLabel[nodeData.platform]}</p>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              node config
+            </p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => selectNode(null)}>
-          <X className="w-4 h-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => selectNode(null)}
+          className="h-7 w-7 text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" strokeWidth={1.5} />
         </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Node Label */}
-        <div className="space-y-2">
-          <Label htmlFor="label" className="text-xs text-muted-foreground">
-            Node Name
-          </Label>
+      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6">
+        <Field label="Name" htmlFor="label">
           <Input
             id="label"
             value={nodeData.label || ""}
             onChange={(e) => updateLabel(e.target.value)}
-            placeholder="Enter node name..."
-            className="bg-background/50"
+            placeholder="Untitled node"
+            className={inputClass}
           />
-        </div>
+        </Field>
 
-        {/* Credential Selector (for non-trigger nodes) */}
         {nodeData.platform !== "trigger" && (
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Credential</Label>
+          <Field label="Credential">
             <Select value={nodeData.credential_id || ""} onValueChange={updateCredential}>
-              <SelectTrigger className="bg-background/50">
-                <SelectValue
-                  placeholder={loadingCredentials ? "Loading..." : "Select credential"}
-                />
+              <SelectTrigger className={inputClass}>
+                <SelectValue placeholder={loadingCredentials ? "Loading…" : "Choose credential"} />
               </SelectTrigger>
               <SelectContent>
                 {credentials.map((cred) => (
@@ -125,102 +153,91 @@ export function NodeConfigPanel() {
                   </SelectItem>
                 ))}
                 {credentials.length === 0 && !loadingCredentials && (
-                  <SelectItem value="" disabled>
-                    No credentials found
+                  <SelectItem value="__none__" disabled>
+                    No credentials yet
                   </SelectItem>
                 )}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
         )}
 
-        {/* Platform-specific fields */}
         {nodeData.platform === "trigger" && (
-          <div className="space-y-4">
-            <div className="p-3 bg-secondary/30 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                This webhook trigger will start the workflow when it receives an HTTP request.
-              </p>
-            </div>
-          </div>
+          <p className="border-l-2 border-border pl-3 text-xs text-muted-foreground">
+            This webhook fires the workflow when it receives an HTTP request. Copy the URL from the
+            header once saved.
+          </p>
         )}
 
         {nodeData.platform === "telegram" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Chat ID</Label>
+          <>
+            <Field label="Chat ID">
               <Input
                 value={nodeData.config?.chat_id || ""}
                 onChange={(e) => updateConfig("chat_id", e.target.value)}
-                placeholder="Enter chat ID..."
-                className="bg-background/50"
+                placeholder="e.g. 1234567890"
+                className={`${inputClass} font-mono text-sm`}
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Message</Label>
+            </Field>
+            <Field label="Message">
               <Textarea
                 value={nodeData.config?.message || ""}
                 onChange={(e) => updateConfig("message", e.target.value)}
-                placeholder="Enter message..."
-                className="bg-background/50 min-h-[100px]"
+                placeholder="What should the bot say?"
+                className="min-h-[120px] bg-card border-border"
               />
-            </div>
-          </div>
+            </Field>
+          </>
         )}
 
         {nodeData.platform === "email" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">To Email</Label>
+          <>
+            <Field label="To">
               <Input
                 value={nodeData.config?.to_email || ""}
                 onChange={(e) => updateConfig("to_email", e.target.value)}
                 placeholder="recipient@example.com"
-                className="bg-background/50"
+                className={`${inputClass} font-mono text-sm`}
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Subject</Label>
+            </Field>
+            <Field label="Subject">
               <Input
                 value={nodeData.config?.subject || ""}
                 onChange={(e) => updateConfig("subject", e.target.value)}
-                placeholder="Email subject..."
-                className="bg-background/50"
+                placeholder="Subject line"
+                className={inputClass}
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Body</Label>
+            </Field>
+            <Field label="Body">
               <Textarea
                 value={nodeData.config?.body || ""}
                 onChange={(e) => updateConfig("body", e.target.value)}
-                placeholder="Email body..."
-                className="bg-background/50 min-h-[100px]"
+                placeholder="Write the email body…"
+                className="min-h-[140px] bg-card border-border"
               />
-            </div>
-          </div>
+            </Field>
+          </>
         )}
 
         {nodeData.platform === "slack" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Channel</Label>
+          <>
+            <Field label="Channel">
               <Input
                 value={nodeData.config?.channel || ""}
                 onChange={(e) => updateConfig("channel", e.target.value)}
-                placeholder="#channel-name"
-                className="bg-background/50"
+                placeholder="#general"
+                className={`${inputClass} font-mono text-sm`}
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Message</Label>
+            </Field>
+            <Field label="Message">
               <Textarea
                 value={nodeData.config?.message || ""}
                 onChange={(e) => updateConfig("message", e.target.value)}
-                placeholder="Enter message..."
-                className="bg-background/50 min-h-[100px]"
+                placeholder="What should Slack say?"
+                className="min-h-[120px] bg-card border-border"
               />
-            </div>
-          </div>
+            </Field>
+          </>
         )}
       </div>
     </div>

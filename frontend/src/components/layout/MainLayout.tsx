@@ -9,7 +9,7 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-black">
+      <div className="min-h-screen flex w-full bg-background text-foreground">
         <AppSidebar />
         <main className="flex-1 overflow-hidden">{children}</main>
       </div>

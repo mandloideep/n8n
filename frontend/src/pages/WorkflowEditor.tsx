@@ -5,7 +5,7 @@ import { NodeConfigPanel } from "@/components/workflow/NodeConfigPanel";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save, Play, ArrowLeft, Loader2, Copy, CheckCheck } from "lucide-react";
+import { Play, ArrowLeft, Loader2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export default function WorkflowEditor() {
@@ -28,146 +28,148 @@ export default function WorkflowEditor() {
     resetWorkflow,
   } = useWorkflowStore();
 
-  // Load workflow if editing
   useEffect(() => {
     if (id) {
-      loadWorkflow(parseInt(id)).catch((error) => {
-        toast.error("Failed to load workflow");
+      loadWorkflow(parseInt(id)).catch(() => {
+        toast.error("Couldn't load workflow");
         navigate("/workflows");
       });
     } else {
       resetWorkflow();
     }
-
-    return () => {
-      // Clean up on unmount
-    };
   }, [id]);
 
   const handleSave = async () => {
     try {
       const workflow = await (currentWorkflow ? saveWorkflow() : createWorkflow());
-      toast.success("Workflow saved successfully!");
+      toast.success("Saved");
 
-      // Navigate to edit mode if this was a new workflow
       if (!id && workflow.id) {
         navigate(`/workflows/${workflow.id}/edit`, { replace: true });
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to save workflow");
+      toast.error(error.message || "Failed to save");
     }
   };
 
   const handleExecute = async () => {
     if (!currentWorkflow) {
-      toast.error("Please save the workflow first");
+      toast.error("Save the workflow first");
       return;
     }
 
     try {
       const result = await executeWorkflow();
       if (result.status === "success") {
-        toast.success(`Workflow executed in ${result.execution_time_ms}ms`);
+        toast.success(`Ran in ${result.execution_time_ms}ms`);
       } else {
-        toast.error(`Execution failed: ${result.error}`);
+        toast.error(`Failed: ${result.error}`);
       }
     } catch (error: any) {
-      toast.error(error.message || "Execution failed");
+      toast.error(error.message || "Run failed");
     }
   };
 
   const copyWebhookUrl = () => {
     if (currentWorkflow?.webhook_path) {
-      // Assumes SPA and API share an origin (true in dev via Vite proxy and in
-      // prod where FastAPI serves the built SPA). If they ever split, replace
-      // window.location.origin with a VITE_PUBLIC_BASE_URL env value.
+      // Assumes SPA and API share an origin. If they ever split, swap
+      // window.location.origin for a VITE_PUBLIC_BASE_URL env value.
       const webhookUrl = `${window.location.origin}/webh/webhook/${currentWorkflow.webhook_path}`;
       navigator.clipboard.writeText(webhookUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast.success("Webhook URL copied!");
+      setTimeout(() => setCopied(false), 1800);
+      toast.success("Webhook URL copied");
     }
   };
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Loading workflow...</span>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/workflows")}>
-            <ArrowLeft className="w-5 h-5" />
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/workflows")}
+            className="h-8 w-8 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
           </Button>
 
           <Input
             value={workflowTitle}
             onChange={(e) => setWorkflowTitle(e.target.value)}
-            placeholder="Workflow name..."
-            className="w-64 bg-background/50 border-border/50 focus:border-primary"
+            placeholder="Untitled workflow"
+            className="h-8 w-64 border-transparent bg-transparent px-2 font-display text-lg italic focus-visible:border-border focus-visible:bg-card"
           />
 
           {currentWorkflow?.webhook_path && (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={copyWebhookUrl}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="ml-2 inline-flex items-center gap-1.5 rounded border border-border bg-background px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
               {copied ? (
-                <CheckCheck className="w-3 h-3 mr-1.5 text-green-500" />
+                <Check className="h-3 w-3 text-primary" strokeWidth={2} />
               ) : (
-                <Copy className="w-3 h-3 mr-1.5" />
+                <Copy className="h-3 w-3" strokeWidth={1.5} />
               )}
-              Copy Webhook URL
-            </Button>
+              /webh/webhook/{currentWorkflow.webhook_path}
+            </button>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+          <Button
+            variant="ghost"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="h-9 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
             {isSaving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Saving
+              </>
             ) : (
-              <Save className="w-4 h-4 mr-2" />
+              "Save"
             )}
-            Save
           </Button>
 
           <Button
             onClick={handleExecute}
             disabled={isExecuting || !currentWorkflow}
-            className="bg-primary hover:bg-primary/90"
+            className="h-9 bg-foreground px-4 text-background hover:bg-primary"
           >
             {isExecuting ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Running
+              </>
             ) : (
-              <Play className="w-4 h-4 mr-2" />
+              <>
+                <Play className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
+                Run
+              </>
             )}
-            Execute
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Canvas */}
+      <div className="flex flex-1 overflow-hidden">
         <div className="flex-1">
           <WorkflowCanvas />
         </div>
 
-        {/* Config Panel */}
         {selectedNodeId && (
-          <div className="w-80 border-l border-border bg-card/30">
+          <div className="w-80 border-l border-border">
             <NodeConfigPanel />
           </div>
         )}
